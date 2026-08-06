@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+session.json
+strong-export*.json
+coverage/

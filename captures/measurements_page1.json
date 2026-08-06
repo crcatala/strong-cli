@@ -1,0 +1,948 @@
+{
+  "_links": {
+    "self": {
+      "href": "/api/measurements"
+    },
+    "next": {
+      "href": "/api/measurements?page=2"
+    }
+  },
+  "total": 253,
+  "_embedded": {
+    "measurement": [
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/3b8b97d5-57eb-427c-85b1-4e9222593a97"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/core"
+            }
+          ]
+        },
+        "id": "3b8b97d5-57eb-427c-85b1-4e9222593a97",
+        "created": "2018-05-02T08:34:36.034Z",
+        "lastChanged": "2018-06-20T06:29:28.172Z",
+        "name": {
+          "en": "Side Bend (Band)"
+        },
+        "instructions": {
+          "en": "Secure band to an elevated object so that it is taunt at shoulder level and hold the handle in the left hand.||Bend the torso and contract the obliques while exhaling.||Return slowly to the starting position while inhaling.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMG1vZhW35Igd.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THU1vZhW35Igd%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/e0b1aa09-f4c5-4ead-95de-03a2f7530c87"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/core"
+            }
+          ]
+        },
+        "id": "e0b1aa09-f4c5-4ead-95de-03a2f7530c87",
+        "created": "2018-04-27T09:35:34.207Z",
+        "lastChanged": "2018-10-15T06:17:06.884Z",
+        "name": {
+          "en": "Toes To Bar"
+        },
+        "instructions": {
+          "en": "NOTE: You can perform this with your knees bent or your legs straight, but use the latter for better core activation.||Grasp the pull up bar with a shoulder-width grip. You can perform this movement with your palms facing away from you or towards you. This is your starting position.||From the hanging position, bring both of your feet up so your toes make contact with the bar.||Lower yourself down to the starting position.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMGZVwtvLdWzZ.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THUZVwtvLdWzZ%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/d32f8c6a-e498-4fc0-b18d-5ce16680a63c"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/full-body"
+            }
+          ]
+        },
+        "id": "d32f8c6a-e498-4fc0-b18d-5ce16680a63c",
+        "created": "2018-04-27T09:35:27.709Z",
+        "lastChanged": "2018-10-15T05:46:32.666Z",
+        "name": {
+          "en": "Thruster (Barbell)"
+        },
+        "instructions": {
+          "en": "NOTE: As this is a complex movement, we recommend having an experienced coach demonstrate the exercise.||Set the rack height so that the barbell is positioned slightly below shoulder level.||With a braced core, chest up, create a shelf with the front of the delt with the bar touching the clavicle and neck. The fingers should rest under the bar with elbows pointed forward and up (depending on flexibility).||Unrack the bar and step back to a position with feet shoulder width apart. This is your starting position.||Keeping core braced, chest up and head neutral, break at the hips keeping pressure on the midfoot and descend into a squat. Continue lowering the body until the thighs are at or past parallel with the ground.||As you prepare to stand back up, push through your heels and begin to wrap your fingers tightly around the bar with a firm grip. When you approach the top of your squat, begin pressing the bar up towards the ceiling while making sure to move your neck backwards to make room for the bar.||The final position will be when your arms are fully extended overhead and your legs are fully straight. Hold the position for a brief moment, and lower the bar back down to starting position.||Repeat for reps."
+        },
+        "media": [],
+        "cellTypeConfigs": [
+          {
+            "cellType": "BARBELL_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/b49268bb-058e-4139-ac4a-555d1d5ae9fb"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/full-body"
+            }
+          ]
+        },
+        "id": "b49268bb-058e-4139-ac4a-555d1d5ae9fb",
+        "created": "2018-04-27T09:35:21.522Z",
+        "lastChanged": "2018-10-15T05:59:29.818Z",
+        "name": {
+          "en": "Sumo Deadlift High Pull (Barbell)"
+        },
+        "instructions": {
+          "en": "Position feet under bar in a wide stance. Squat down and grasp bar between legs with shoulder width grip. Brace the core, flex the quads and keep the chest upward.||Stand up by driving through the floor with the weight spread on the heel and midfoot and extending through the hips.||As you stand up, simultaneously pull the bar upwards towards your chin, driving your elbows upwards and outwards. Remember to keep the bar over midfoot at all times.||Lower weight back to the starting position and repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMGQo7gD0iCiE.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/VIDQo7gD0iCiE.mp4",
+            "type": "VIDEO",
+            "contentType": "video/mp4"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THUQo7gD0iCiE%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "BARBELL_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/9bf68e10-b954-4d3d-af8b-c3ca21587a70"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/full-body"
+            }
+          ]
+        },
+        "id": "9bf68e10-b954-4d3d-af8b-c3ca21587a70",
+        "created": "2018-04-27T09:35:15.026Z",
+        "lastChanged": "2018-10-15T05:59:16.479Z",
+        "name": {
+          "en": "Squat Row (Band)"
+        },
+        "instructions": {
+          "en": "Secure band to an elevated object so that it is taut at shoulder level and hold the handles in both hands. Start in a squat position.||Push from the heels and midfoot to extend legs and simultaneously pull band handles in a rowing motion while exhaling.||Return to starting position while inhaling, keeping core tight.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMG21HX72M0y3.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THU21HX72M0y3%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/99afdf73-0e2f-4f2d-a10d-90299196b0db"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/legs"
+            }
+          ]
+        },
+        "id": "99afdf73-0e2f-4f2d-a10d-90299196b0db",
+        "created": "2018-04-27T09:35:09.053Z",
+        "lastChanged": "2018-10-15T05:57:51.864Z",
+        "name": {
+          "en": "Squat (Machine)"
+        },
+        "instructions": {
+          "en": "Place feet shoulder width apart and slightly in front of the torso, and grip the handles.||While bracing your core and keeping chest up, push with the feet until the weight is supported by the shoulders. This is your starting position.||Slowly lower your body by breaking at the hips until the thighs and calves make a 90 degree angle.||When at the bottom of the movement, push through the heels and midfoot while exhaling to return to the starting position, making sure to keep your weight evenly distributed across your feet.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMG3oL8QpU0W8.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THU3oL8QpU0W8%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "OTHER_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/88b0165c-0c7c-423a-949d-0171baa354c2"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/legs"
+            }
+          ]
+        },
+        "id": "88b0165c-0c7c-423a-949d-0171baa354c2",
+        "created": "2018-04-27T09:34:47.816Z",
+        "lastChanged": "2018-10-15T05:37:06.966Z",
+        "name": {
+          "en": "Glute Kickback (Machine)"
+        },
+        "instructions": {
+          "en": "NOTE: Depending on your gym, the machine may look different, but the general instructions should remain the same.||Adjust the chest pads to the appropriate height.||Position your chest against the pads and grip the handles while placing one foot on the platform with your knees bent.||Kick back the platform and make sure you're using your glutes to push the weight back.||Once your leg is fully extended, hold the position for a brief moment and slowly return to the starting position.||Repeat for reps, then repeat for the other side."
+        },
+        "media": [],
+        "cellTypeConfigs": [
+          {
+            "cellType": "OTHER_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/231a78da-13dc-441d-ac31-03d5730e8168"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/legs"
+            }
+          ]
+        },
+        "id": "231a78da-13dc-441d-ac31-03d5730e8168",
+        "created": "2018-04-27T09:32:45.492Z",
+        "lastChanged": "2018-10-15T06:09:47.274Z",
+        "name": {
+          "en": "Seated Calf Raise (Machine)"
+        },
+        "instructions": {
+          "en": "NOTE: This exercise can be done with both legs at a time or one leg at a time.||Sit down on the calf raise machine and place your legs on the platform at a shoulder width foot stance.||Press the sled all the way out until your legs are fully extended without locking your knees.||Place your feet so that only your toes are on the platform and your heels are extending off the sled. This is your starting position.||Press on the sled by raising your heels and extending your ankles as high as possible and flexing your calf. Both of your knees should be kept stationary at all times.||Breathe in and go back to the starting position by lowering your heels as you bend the ankles until calves are stretched.||Repeat for reps."
+        },
+        "media": [],
+        "cellTypeConfigs": [
+          {
+            "cellType": "OTHER_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/04e2090c-a84e-47a1-81c5-55103b28ed2f"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/chest"
+            }
+          ]
+        },
+        "id": "04e2090c-a84e-47a1-81c5-55103b28ed2f",
+        "created": "2018-04-27T09:31:27.262Z",
+        "lastChanged": "2018-10-15T05:44:48.526Z",
+        "name": {
+          "en": "Pullover (Machine)"
+        },
+        "instructions": {
+          "en": "Adjust the machine for the appropriate height so that your elbows are placed directly on the pads when you sit down and extend your arms overhead.||Feel the stretch in your lats and slowly lower your hands down in front of you while squeezing your lats.||Slowly return to the starting position.||Repeat for reps."
+        },
+        "media": [],
+        "cellTypeConfigs": [
+          {
+            "cellType": "OTHER_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/6df7b87b-4467-43b6-9458-6ade61838823"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/core"
+            }
+          ]
+        },
+        "id": "6df7b87b-4467-43b6-9458-6ade61838823",
+        "created": "2018-04-27T09:28:40.342Z",
+        "lastChanged": "2018-10-15T05:40:34.315Z",
+        "name": {
+          "en": "Knees to Elbows"
+        },
+        "instructions": {
+          "en": "Grasp the pull up bar with a shoulder-width grip. You can perform this movement with your palms facing away from you or towards you. This is your starting position.||From the hanging position, bring both of your knees up so they make contact with your elbows.||Lower yourself down to the starting position.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMG1zr0rBKCMt.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THU1zr0rBKCMt%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/402c550a-194e-4b58-a2ec-b12e5b404547"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/full-body"
+            }
+          ]
+        },
+        "id": "402c550a-194e-4b58-a2ec-b12e5b404547",
+        "created": "2018-04-27T09:22:24.575Z",
+        "lastChanged": "2018-09-27T08:56:38.354Z",
+        "name": {
+          "en": "Muscle Up"
+        },
+        "instructions": {
+          "en": "NOTE: You can perform this exercise on a pull up bar or rings. As this is a complex movement, we recommend consulting a trainer who is able to instruct you with the appropriate form and cues.||Grasp the bar at a slightly wider than shoulder width with your palms facing away from you. This is your starting position.||Pull yourself upward by retracting your scapula and bring your chest to the bar.||As you reach the top position, pull the bar towards your armpits and roll your shoulders forward to allow your elbows to move straight back behind you. Doing so should put you in the proper position to push yourself upwards into the dip portion of the movement.||Extend through the elbows until your arms are fully straight, then carefully lower yourself back down to the starting position.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMG3CIQJ2Axgu.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THU3CIQJ2Axgu%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "WEIGHTED_BODYWEIGHT"
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/0373b862-bde8-4335-ab03-763cca57455c"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/full-body"
+            }
+          ]
+        },
+        "id": "0373b862-bde8-4335-ab03-763cca57455c",
+        "created": "2018-04-27T08:54:12.638Z",
+        "lastChanged": "2018-10-15T05:50:22.003Z",
+        "name": {
+          "en": "Ball Slams"
+        },
+        "instructions": {
+          "en": "Hold a medicine ball over your head with both hands and stand with your feet at shoulder width. This is your starting position.||Slam the ball into the ground directly in front you with as much force as you can.||Pick up the medicine ball and bring it back up overhead.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMG5QD729I5Fc.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THU5QD729I5Fc%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "OTHER_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/61f41123-654e-45b9-9c3b-fd4cbea9eaf0"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/shoulders"
+            }
+          ]
+        },
+        "id": "61f41123-654e-45b9-9c3b-fd4cbea9eaf0",
+        "created": "2018-04-27T07:16:56.364Z",
+        "lastChanged": "2018-09-27T09:09:21.278Z",
+        "name": {
+          "en": "Upright Row (Dumbbell)"
+        },
+        "instructions": {
+          "en": "Hold dumbbells with arms at shoulder width and grip with a pronated grip.||Use shoulders to lift the dumbbells as you exhale.||Elbows should lead movement and your hands should be close to the body as it is elevated.||Continue to lift until hands are at your chin level. Hold at this position as you contract the shoulder muscles.||Lower to starting position.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMG1eUsbxgWTB.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THU1eUsbxgWTB%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "DUMBBELL_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/b8b33683-ce46-4392-8be5-207fe8e605bd"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/arms"
+            }
+          ]
+        },
+        "id": "b8b33683-ce46-4392-8be5-207fe8e605bd",
+        "created": "2018-04-27T07:16:49.458Z",
+        "lastChanged": "2018-09-27T09:15:25.554Z",
+        "name": {
+          "en": "Upright Row (Cable)"
+        },
+        "instructions": {
+          "en": "Adjust the pulley height so that it's near the floor.||Grab the cable handles with your arms at shoulder width and grip them with a pronated grip.||Use shoulders to lift the weight up as you exhale.||Elbows should lead movement and the handles should be close to the body as it is elevated.||Continue to lift until hands are at your chin level. Hold at this position as you contract the shoulder muscles.||Lower to starting position.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMGkhcDDtHI64.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THUkhcDDtHI64%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "OTHER_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/0973c5dd-5b62-4e9e-a15e-114cb94f440d"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/arms"
+            }
+          ]
+        },
+        "id": "0973c5dd-5b62-4e9e-a15e-114cb94f440d",
+        "created": "2018-04-27T07:16:42.194Z",
+        "lastChanged": "2018-10-15T06:33:50.203Z",
+        "name": {
+          "en": "Triceps Extension (Machine)"
+        },
+        "instructions": {
+          "en": "Adjust the machine's seat to the appropriate height and select the appropriate weight. Place your upper arms against the machine's pads while gripping the handles. This is your starting position.||Extend at the elbow and lower the weight until your arms are fully extended.||Once your arms are fully extended, hold the position for a brief moment and slowly raise your arms back to the starting position.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMGEWm19pmMjX.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/VIDEWm19pmMjX.mp4",
+            "type": "VIDEO",
+            "contentType": "video/mp4"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THUEWm19pmMjX%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "OTHER_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/3718fbd6-a0e5-4d56-bb92-10feb3600156"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/arms"
+            }
+          ]
+        },
+        "id": "3718fbd6-a0e5-4d56-bb92-10feb3600156",
+        "created": "2018-04-27T07:16:27.239Z",
+        "lastChanged": "2018-10-15T06:33:45.467Z",
+        "name": {
+          "en": "Triceps Extension (Cable)"
+        },
+        "instructions": {
+          "en": "Attach a rope grip to the bottom pulley of the cable machine.||Grasp the rope with both hands and extend your hands directly above your head. Keep your elbows close to your head with your arms perpendicular to the floor. This is your starting position.||Slowly lower the rope behind your head as you keep your upper arms in place, and pause when your triceps are fully stretched.||Return to the starting position by flexing your triceps.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMGRemEUYjkoZ.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/VIDRemEUYjkoZ.mp4",
+            "type": "VIDEO",
+            "contentType": "video/mp4"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THURemEUYjkoZ%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "OTHER_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/d3560a25-828f-4f33-8624-6fc4875d3cca"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/arms"
+            }
+          ]
+        },
+        "id": "d3560a25-828f-4f33-8624-6fc4875d3cca",
+        "created": "2018-04-27T07:16:20.539Z",
+        "lastChanged": "2018-10-15T06:33:41.763Z",
+        "name": {
+          "en": "Triceps Extension (Barbell)"
+        },
+        "instructions": {
+          "en": "NOTE: This exercise can be performed while standing up or lying down on a flat bench.||Hold a barbell with both hands over head with arms fully extended.||Lower the dumbbell in a circular motion behind the head until the forearms touch the biceps.||Return to the starting position by flexing the triceps.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMGwkhndb6Af4.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/VIDwkhndb6Af4.mp4",
+            "type": "VIDEO",
+            "contentType": "video/mp4"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THUwkhndb6Af4%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "BARBELL_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/933a3dbf-b9c2-40f9-852f-cd2b26dd9eb1"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/arms"
+            }
+          ]
+        },
+        "id": "933a3dbf-b9c2-40f9-852f-cd2b26dd9eb1",
+        "created": "2018-04-27T07:16:14.451Z",
+        "lastChanged": "2018-10-15T06:33:37.591Z",
+        "name": {
+          "en": "Triceps Dip (Assisted)"
+        },
+        "instructions": {
+          "en": "Hold your body with arms extended above the dip bars and place your knees on the assistance pad. This is your starting position.||Slowly lower your body while keeping your upper arms as close to your body and your torso as upright as possible. Lower yourself until there's a 90 degree angle between your upper arm and forearms.||Briefly hold the position at the bottom of the movement, then push yourself upwards using your triceps to bring yourself back to the starting position.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMGioCO1kXB9v.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THUioCO1kXB9v%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "OTHER_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/57f573f8-f797-4483-bc1f-5911a70463a6"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/legs"
+            }
+          ]
+        },
+        "id": "57f573f8-f797-4483-bc1f-5911a70463a6",
+        "created": "2018-04-27T07:15:54.786Z",
+        "lastChanged": "2018-09-27T09:15:17.868Z",
+        "name": {
+          "en": "Trap Bar Deadlift"
+        },
+        "instructions": {
+          "en": "Load a trap bar (also known as a hex bar) with an appropriate weight.||Stand in the center of the apparatus and grasp both handles.||Lower your hips while keeping your back straight at all times and your head looking forward. This is your starting position.||Stand up by driving your feet through the ground and extending your hips and your knees. Be careful to avoid any form of back rounding at all times.||Briefly pause at the top of the lift, then return to starting position -- be sure to bend your knees only after the bar has traveled past them.||Repeat for reps."
+        },
+        "media": [
+          {
+            "url": "https://files.strong.app/users/global/IMGEYdTVRiRNC.jpg",
+            "type": "IMAGE",
+            "contentType": "image/jpeg"
+          },
+          {
+            "url": "https://files.strong.app/users/global/VIDEYdTVRiRNC.mp4",
+            "type": "VIDEO",
+            "contentType": "video/mp4"
+          },
+          {
+            "url": "https://files.strong.app/users/global/THUEYdTVRiRNC%403x.png",
+            "type": "THUMBNAIL",
+            "contentType": "image/png"
+          }
+        ],
+        "cellTypeConfigs": [
+          {
+            "cellType": "BARBELL_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/measurements/42695e60-4dd7-41a0-8233-c26b1fe24e6e"
+          },
+          "tag": [
+            {
+              "href": "/api/tags/core"
+            }
+          ]
+        },
+        "id": "42695e60-4dd7-41a0-8233-c26b1fe24e6e",
+        "created": "2018-04-27T07:15:41.864Z",
+        "lastChanged": "2018-09-27T09:15:13.047Z",
+        "name": {
+          "en": "Torso Rotation (Machine)"
+        },
+        "instructions": {
+          "en": "Adjust the chest support padding to the appropriate height so that it's placed directly across the middle of your chest as you kneel down on the platform. This is your starting position.||Grip the handles and rotate your torso to the right.||Repeat for reps, then adjust the machine for the opposite side and repeat the movement."
+        },
+        "media": [],
+        "cellTypeConfigs": [
+          {
+            "cellType": "OTHER_WEIGHT",
+            "mandatory": true
+          },
+          {
+            "cellType": "REPS",
+            "mandatory": true
+          },
+          {
+            "cellType": "RPE",
+            "isExponent": true
+          }
+        ],
+        "isGlobal": true,
+        "measurementType": "EXERCISE"
+      }
+    ]
+  }
+}

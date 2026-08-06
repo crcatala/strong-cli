@@ -1,0 +1,190 @@
+{
+  "_links": {
+    "self": { "href": "/api/users/11111111-1111-4111-8111-111111111111" },
+    "next": null
+  },
+  "_embedded": {
+    "log": [
+      {
+        "_links": {
+          "self": {
+            "href": "/api/users/11111111-1111-4111-8111-111111111111/logs/log-synthetic-0003"
+          },
+          "user": { "href": "/api/users/11111111-1111-4111-8111-111111111111" }
+        },
+        "_embedded": {
+          "cellSetGroup": [
+            {
+              "_links": {
+                "measurement": {
+                  "href": "/api/users/11111111-1111-4111-8111-111111111111/measurements/99afdf73-0e2f-4f2d-a10d-90299196b0db"
+                }
+              },
+              "id": "csg-synthetic-003a",
+              "cellSets": [
+                {
+                  "id": "cs-synthetic-003a1",
+                  "isCompleted": true,
+                  "cells": [
+                    { "id": "cl-1", "cellType": "OTHER_WEIGHT", "value": "60" },
+                    { "id": "cl-2", "cellType": "REPS", "value": "12" }
+                  ]
+                },
+                {
+                  "id": "cs-synthetic-003a2",
+                  "isCompleted": true,
+                  "cells": [
+                    { "id": "cl-3", "cellType": "OTHER_WEIGHT", "value": "70" },
+                    { "id": "cl-4", "cellType": "REPS", "value": "10" }
+                  ]
+                }
+              ]
+            },
+            {
+              "_links": {
+                "measurement": {
+                  "href": "/api/users/11111111-1111-4111-8111-111111111111/measurements/3718fbd6-a0e5-4d56-bb92-10feb3600156"
+                }
+              },
+              "id": "cs-synthetic-003b",
+              "cellSets": [
+                {
+                  "id": "cs-synthetic-003b1",
+                  "isCompleted": true,
+                  "cells": [
+                    { "id": "cl-5", "cellType": "OTHER_WEIGHT", "value": "27.5" },
+                    { "id": "cl-6", "cellType": "REPS", "value": "12" }
+                  ]
+                },
+                {
+                  "id": "cs-synthetic-003b2",
+                  "isCompleted": false,
+                  "cells": [
+                    { "id": "cl-7", "cellType": "OTHER_WEIGHT", "value": "32.5" },
+                    { "id": "cl-8", "cellType": "REPS", "value": "8" }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "name": { "en": "Push Day" },
+        "logType": "WORKOUT",
+        "startDate": "2026-05-06T16:07:54.566Z",
+        "endDate": "2026-05-06T17:01:58.254Z",
+        "timezoneId": "Europe/Berlin",
+        "created": "2026-05-06T17:02:00.000Z",
+        "lastChanged": "2026-05-06T17:02:00.000Z",
+        "id": "log-synthetic-0003"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/users/11111111-1111-4111-8111-111111111111/logs/log-synthetic-0002"
+          },
+          "user": { "href": "/api/users/11111111-1111-4111-8111-111111111111" }
+        },
+        "_embedded": {
+          "cellSetGroup": [
+            {
+              "_links": {
+                "measurement": {
+                  "href": "/api/users/11111111-1111-4111-8111-111111111111/measurements/57f573f8-f797-4483-bc1f-5911a70463a6"
+                }
+              },
+              "id": "cs-synthetic-0002a",
+              "cellSets": [
+                {
+                  "id": "cs-synthetic-0002a1",
+                  "isCompleted": true,
+                  "cells": [
+                    { "id": "cl-11", "cellType": "BARBELL_WEIGHT", "value": "100" },
+                    { "id": "cl-12", "cellType": "REPS", "value": "6" },
+                    { "id": "cl-13", "cellType": "RPE", "value": "8" }
+                  ]
+                },
+                {
+                  "id": "cs-synthetic-0002a2",
+                  "isCompleted": true,
+                  "cells": [
+                    { "id": "cl-14", "cellType": "BARBELL_WEIGHT", "value": "110" },
+                    { "id": "cl-15", "cellType": "REPS", "value": "5" },
+                    { "id": "cl-16", "cellType": "RPE", "value": "9" }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "name": { "en": "Deadlift Focus" },
+        "logType": "WORKOUT",
+        "startDate": "2026-05-02T09:13:02.080Z",
+        "endDate": "2026-05-02T10:00:00.000Z",
+        "timezoneId": "Europe/Berlin",
+        "created": "2026-05-02T10:00:00.000Z",
+        "lastChanged": "2026-05-02T10:00:00.000Z",
+        "id": "log-synthetic-0002"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "/api/users/11111111-1111-4111-8111-111111111111/logs/log-synthetic-0001"
+          },
+          "user": { "href": "/api/users/11111111-1111-4111-8111-111111111111" }
+        },
+        "_embedded": {
+          "cellSetGroup": [
+            {
+              "_links": {
+                "measurement": {
+                  "href": "/api/users/11111111-1111-4111-8111-111111111111/measurements/61f41123-654e-45b9-9c3b-fd4cbea9eaf0"
+                }
+              },
+              "id": "cs-synthetic-0001a",
+              "cellSets": [
+                {
+                  "id": "cs-synthetic-0001a1",
+                  "isCompleted": true,
+                  "cells": [
+                    { "id": "cl-21", "cellType": "DUMBBELL_WEIGHT", "value": "20" },
+                    { "id": "cl-22", "cellType": "REPS", "value": "12" }
+                  ]
+                },
+                {
+                  "id": "cs-synthetic-0001a2",
+                  "isCompleted": true,
+                  "cells": [
+                    { "id": "cl-23", "cellType": "DUMBBELL_WEIGHT", "value": "22.5" },
+                    { "id": "cl-24", "cellType": "REPS", "value": "10" }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "name": { "en": "Back & Biceps" },
+        "logType": "WORKOUT",
+        "startDate": "2026-04-28T16:30:00.000Z",
+        "endDate": "2026-04-28T17:15:00.000Z",
+        "timezoneId": "Europe/Berlin",
+        "created": "2026-04-28T17:15:00.000Z",
+        "lastChanged": "2026-04-28T17:15:00.000Z",
+        "id": "log-synthetic-0001"
+      }
+    ],
+    "measurement": []
+  },
+  "id": "11111111-1111-4111-8111-111111111111",
+  "created": "2019-01-01T00:00:00.000Z",
+  "lastChanged": "2026-05-06T17:02:00.000Z",
+  "username": "synthetic-user",
+  "email": "[EMAIL]",
+  "name": "Synthetic User",
+  "startHistoryFromDate": "1970-01-01T00:00:00Z",
+  "firstWeekDay": "MONDAY",
+  "preferences": {
+    "weightUnit": { "11111111-1111-4111-8111-111111111111": "KILOGRAMS" },
+    "distanceUnit": { "11111111-1111-4111-8111-111111111111": "KILOMETERS" },
+    "restTimer": { "11111111-1111-4111-8111-111111111111": 90 }
+  }
+}
