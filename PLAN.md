@@ -1,4 +1,4 @@
-# Strong CLI — Spike Plan
+# Strong CLI — Design & Plan
 
 A read-only TypeScript CLI for [Strong Workout Tracker](https://www.strong.app/), built
 from the reverse-engineered API at `https://back.strong.app`.
@@ -51,7 +51,7 @@ src/
 docs/               # reverse-engineered API documentation
 captures/           # fixtures (public + synthetic, no real user data)
 tests/
-  unit/             # msw-free fetch-mock unit tests (32 tests)
+  unit/             # msw-free fetch-mock unit tests (78 tests)
   live/             # gated by RUN_LIVE_TESTS=1 (public+auth paths verified live)
 ```
 
@@ -65,7 +65,7 @@ tests/
    60s-before-expiry; single in-flight refresh; persist-before-return.
 3. **Session storage**: keyring by default (keytar), plaintext config file via
    `--use-config`, env vars (`STRONG_ACCESS_TOKEN`/`STRONG_REFRESH_TOKEN`) for CI.
-4. **No writes** in this spike — Strong API writes are undocumented and risky; read-only
+4. **No writes** in this tool — Strong API writes are undocumented and risky; read-only
    keeps the account safe (DMCA/ToS caution from prior community history).
 5. **Incremental sync via continuation cursor** (new): the API pages logs in
    `lastChanged` (modification) order — verified live (1 828 logs / 75 pages,
@@ -79,7 +79,7 @@ tests/
    `x-client-platform: android` — the combination verified against the live API.
    Overridable via env vars.
 
-## Commands (spike scope)
+## Commands
 
 | Command | Purpose |
 |---|---|
@@ -114,3 +114,28 @@ tests/
   live), the CLI converts to the account's `weightUnit`/`distanceUnit` prefs
   for display (default POUNDS/MILES) and keeps raw values in JSON. Remaining
   nicety: a `--unit` override flag for formatting regardless of prefs.
+
+## Maintenance backlog
+
+Small fixes worth doing when next touching the area (from the pre-standalone
+review; low urgency, none blocks everyday use):
+
+- **P2 — `setEnv()` module-level mutable singleton** (`src/config/config.ts`).
+  Vitest runs test files in parallel and `setEnv` mutates a module-global env.
+  Currently safe (only config tests mutate it, and they reset in `afterEach`),
+  but new CLI-level tests should reset env in `afterEach` too, or switch to
+  per-invocation env plumbing / serial test runs if it bites.
+- **P3 — JWT claims decoded but never validated.** `decodeJwt` reads
+  `exp`/`nameidentifier` without signature verification (by design — token
+  comes from our own TLS login) or `exp`-bounds/`iat`/`nbf` sanity checks.
+  Accepted threat model for a personal read-only CLI; revisit if the tool is
+  ever shared or fed third-party session files.
+- **P3 — 5xx retry backoff is hardcoded** (250/500 ms, two retries) and 429
+  (soft rate limit) fails through immediately. If soft limits are hit in
+  practice, add an env-tunable backoff and treat 429 as retryable.
+- **P3 — Biome config drift.** `biome.json` pins `$schema 2.3.11` while the
+  installed CLI is 2.5.x; `biome migrate` will clear the warnings.
+- **Cache gap — deleted workouts.** The API does not tombstone deletions, so
+  `--fresh` is the only way to drop deleted workouts from the cache; a
+  periodic `--fresh` reminder or a re-sync-on-delete heuristic would close
+  this.
