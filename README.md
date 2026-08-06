@@ -19,7 +19,7 @@ cd strong-cli
 npm install
 
 # once published:
-# npm install -g strong-workout-cli
+# npm install -g @crcatala/strong-cli
 
 # fast dev (bun runs TS natively — ~85 ms startup)
 bun src/cli.ts <command>

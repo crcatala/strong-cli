@@ -1,5 +1,5 @@
 {
-  "name": "strong-workout-cli",
+  "name": "@crcatala/strong-cli",
   "version": "0.1.0",
   "description": "Unofficial read-only CLI for Strong Workout Tracker (strong.app)",
   "license": "MIT",
