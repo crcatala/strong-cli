@@ -1,0 +1,23 @@
+---
+id: sc-2wqs
+status: open
+deps: []
+links: []
+created: 2026-08-06T21:04:34Z
+type: task
+priority: 2
+assignee: cc-vps
+tags: [config, tests, tech-debt]
+---
+# config: setEnv() module-level mutable singleton is a test footgun
+
+PLAN.md backlog P2. src/config/config.ts keeps a module-global env via let _env = process.env and setEnv() mutates it (tests + run.ts injection). Vitest runs test files in parallel; any test that calls setEnv() races with other test files reading config. Currently safe only because the config tests reset env in afterEach. This will bite as soon as CLI-level or integration tests exercise config paths.
+
+## Design
+
+Options, in order of preference: (a) thread env explicitly through the code path (per-invocation plumbing, e.g. pass a ConfigEnv into sessionStore/config functions) so no module state exists; (b) keep setEnv but add a resetEnv() helper and a documented rule that every test touching config must reset in afterEach; (c) run config tests serially (vitest --no-file-parallelism or fileParallelism:false in vitest.config.ts). Option (a) is the real fix; (b)/(c) are stopgaps. Note run.ts calls setEnv with the real process.env at bootstrap, so any refactor must preserve that injection point.
+
+## Acceptance Criteria
+
+No module-global env mutation can cause cross-test-file races (or tests are made serial as a documented stopgap). All existing 78 unit tests still pass. run.ts env injection behavior unchanged. Tests for the new approach exist and reset state in afterEach where applicable.
+
