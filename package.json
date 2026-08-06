@@ -1,7 +1,24 @@
 {
-  "name": "strong-cli",
+  "name": "strong-workout-cli",
   "version": "0.1.0",
   "description": "Unofficial read-only CLI for Strong Workout Tracker (strong.app)",
+  "license": "MIT",
+  "keywords": [
+    "strong",
+    "strong-app",
+    "workout",
+    "fitness",
+    "gym",
+    "cli"
+  ],
+  "homepage": "https://github.com/crcatala/strong-cli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crcatala/strong-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/crcatala/strong-cli/issues"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -42,5 +59,10 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "esbuild@0.21.5": true,
+    "keytar@7.9.0": true
   }
 }

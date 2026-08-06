@@ -2,8 +2,8 @@
 
 Unofficial read-only CLI for [Strong Workout Tracker](https://www.strong.app/), built
 for personal-productivity/AI-agent use. Reverse-engineered from the app's backend
-(`https://back.strong.app`) — **no official API exists**, so this is a spike on
-community-reverse-engineered endpoints.
+(`https://back.strong.app`) — **no official API exists**, so this is built on
+community-reverse-engineered endpoints. Use at your own risk.
 
 > ⚠️ **Caution**: This is an unofficial client for an undocumented API. Use it
 > read-only, at low frequency, for your own data. See
@@ -11,9 +11,15 @@ community-reverse-engineered endpoints.
 
 ## Setup
 
+> Not published to npm yet — install from source until then.
+
 ```bash
-cd experiments/strong-cli
+git clone https://github.com/crcatala/strong-cli
+cd strong-cli
 npm install
+
+# once published:
+# npm install -g strong-workout-cli
 
 # fast dev (bun runs TS natively — ~85 ms startup)
 bun src/cli.ts <command>
@@ -143,7 +149,7 @@ strong export --json | jq .totals
 - `docs/api-inventory.md` — endpoint map, request/response shapes
 - `docs/auth-findings.md` — auth flow, token lifecycle, risks
 - `docs/data-model.md` — raw HAL model vs. normalized domain model
-- `docs/review-followups.md` — open follow-ups from the PR review (prioritized)
+- `PLAN.md` — design decisions, architecture, known risks, backlog
 - `captures/` — fixtures: public exercise library (real) + synthetic session/logs
 - API knowledge triangulated from `tolik518/strong-api-workout-sync`,
   `jerhinesmith/strong-mcp` (MIT), `TheAlexLichter/strong-exporter`,
@@ -152,7 +158,7 @@ strong export --json | jq .totals
 ## Tests
 
 ```bash
-npm test                          # 40 unit tests, mocked fetch
+npm test                          # 78 unit tests, mocked fetch
 RUN_LIVE_TESTS=1 STRONG_USERNAME=... STRONG_PASSWORD=... \
   npx vitest run tests/live --no-file-parallelism   # real API (public + your account)
 ```
