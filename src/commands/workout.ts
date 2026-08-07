@@ -12,6 +12,7 @@ import {
   distanceLabel,
   distanceToDisplay,
   fmtNumber,
+  parseUnitOverride,
   resolveDistanceUnit,
   resolveWeightUnit,
   weightLabel,
@@ -45,11 +46,12 @@ export function registerWorkoutCommand(program: Command, ctx: CliContext): void 
   program
     .command('workout <id>')
     .description('Show a single workout in detail')
+    .option('--unit <unit>', 'Override display units (kg, lb, m, km, mi)')
     .addHelpText(
       'after',
-      '\nExamples:\n  strong workout 4f7b1c2e-...  # log id from `strong workouts`',
+      '\nExamples:\n  strong workout 4f7b1c2e-...  # log id from `strong workouts`\n  strong workout 4f7b1c2e-... --unit lb  # force lb display',
     )
-    .action(async (id: string) => {
+    .action(async (id: string, options: { unit?: string }) => {
       if (!id) throw new UsageError('workout id is required')
 
       const client = createClient()
@@ -85,8 +87,12 @@ export function registerWorkoutCommand(program: Command, ctx: CliContext): void 
         globalMeasurements._embedded?.measurement ?? [],
         userResp._embedded?.measurement ?? [],
       )
-      const weightUnit = resolveWeightUnit(userResp.preferences?.weightUnit?.[session.userId])
-      const distanceUnit = resolveDistanceUnit(userResp.preferences?.distanceUnit?.[session.userId])
+      const override = parseUnitOverride(options.unit)
+      const weightUnit =
+        override?.weight ?? resolveWeightUnit(userResp.preferences?.weightUnit?.[session.userId])
+      const distanceUnit =
+        override?.distance ??
+        resolveDistanceUnit(userResp.preferences?.distanceUnit?.[session.userId])
       const workout = transformLog(rawLog, measurementMap)
 
       const summary = {

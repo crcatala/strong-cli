@@ -3,6 +3,7 @@ import { registerAuthCommand } from '../commands/auth.js'
 import { registerExercisesCommand } from '../commands/exercises.js'
 import { registerExportCommand } from '../commands/export.js'
 import { registerStatsCommand } from '../commands/stats.js'
+import { registerTemplatesCommand } from '../commands/templates.js'
 import { registerWorkoutCommand } from '../commands/workout.js'
 import { registerWorkoutsCommand } from '../commands/workouts.js'
 import type { CliContext } from './context.js'
@@ -45,6 +46,7 @@ ${formatExample('strong auth login', 'Authenticate with your Strong account')}
 ${formatExample('strong workouts', 'List recent workouts')}
 ${formatExample('strong workout <id>', 'Show a single workout in detail')}
 ${formatExample('strong exercises --search squat', 'Search the exercise library')}
+${formatExample('strong templates', 'List routine templates')}
 ${formatExample('strong stats --weeks 12', 'Volume/set statistics')}
 ${formatExample('strong export -o strong-export.json', 'Export everything to JSON')}
 
@@ -91,6 +93,7 @@ ${ctx.colors.section('Environment Variables')}
   registerWorkoutsCommand(program, ctx)
   registerWorkoutCommand(program, ctx)
   registerExercisesCommand(program, ctx)
+  registerTemplatesCommand(program, ctx)
   registerStatsCommand(program, ctx)
   registerExportCommand(program, ctx)
 

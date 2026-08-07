@@ -81,7 +81,9 @@ distances in m) regardless of account preferences — verified live against
 real data. Display (`--plain`/`--table`, workout detail) converts to the
 account's `weightUnit`/`distanceUnit` preferences (defaulting to **lb/mi**
 when unknown); JSON output keeps raw canonical values and reports the units
-in metadata. Volume is displayed in weight-unit × reps (e.g. `11,635 lb`).
+in metadata. Pass `--unit kg|lb|m|km|mi` on `workouts`/`workout`/`stats` to
+override the display units regardless of account prefs (JSON is unaffected).
+Volume is displayed in weight-unit × reps (e.g. `11,635 lb`).
 
 ## Commands
 
@@ -102,7 +104,17 @@ strong auth logout             # clear credentials
 strong workouts                 # latest 100 workouts (each row shows the workout ID)
 strong workouts --limit 5 --table
 strong workouts --since 2026-01-01
+strong workouts --unit kg       # force kg display regardless of account prefs
 strong workout <id>             # full detail (copy the ID from `strong workouts`)
+strong workout <id> --unit lb   # force lb display in the detail view
+```
+
+### Templates (requires auth)
+
+```bash
+strong templates                    # first 100 routine templates
+strong templates --search push      # filter by name
+strong templates --table
 ```
 
 ### Exercise library (public — works without auth)
@@ -118,6 +130,7 @@ strong exercises --user              # + your custom exercises (needs auth)
 ```bash
 strong stats               # all-time totals, weekly volume, top exercises
 strong stats --weeks 12
+strong stats --unit lb     # force lb display regardless of account prefs
 strong export -o strong-export.json  # full JSON export
 strong export --json | jq .totals
 ```
@@ -158,7 +171,7 @@ strong export --json | jq .totals
 ## Tests
 
 ```bash
-npm test                          # 78 unit tests, mocked fetch
+npm test                          # 90 unit tests, mocked fetch
 RUN_LIVE_TESTS=1 STRONG_USERNAME=... STRONG_PASSWORD=... \
   npx vitest run tests/live --no-file-parallelism   # real API (public + your account)
 ```

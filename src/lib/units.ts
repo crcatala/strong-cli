@@ -12,8 +12,40 @@
  * preference overrides it.
  */
 
+import { UsageError } from '../cli/errors.js'
+
 export type WeightUnit = 'KILOGRAMS' | 'POUNDS'
 export type DistanceUnit = 'METERS' | 'KILOMETERS' | 'MILES'
+
+/** Partial display-unit override from the `--unit` flag (absent fields keep account prefs). */
+export interface DisplayUnitOverride {
+  weight?: WeightUnit
+  distance?: DistanceUnit
+}
+
+/**
+ * Parse a `--unit` flag value (`kg|lb|m|km|mi`) into display-unit overrides.
+ * Returns `null` when no override was given. Weight values override the
+ * weight unit only; distance values the distance unit only — the other unit
+ * keeps the account preference. Throws {@link UsageError} on unknown values.
+ */
+export function parseUnitOverride(value: string | undefined): DisplayUnitOverride | null {
+  if (value === undefined) return null
+  switch (value) {
+    case 'kg':
+      return { weight: 'KILOGRAMS' }
+    case 'lb':
+      return { weight: 'POUNDS' }
+    case 'm':
+      return { distance: 'METERS' }
+    case 'km':
+      return { distance: 'KILOMETERS' }
+    case 'mi':
+      return { distance: 'MILES' }
+    default:
+      throw new UsageError(`Invalid --unit: ${value} (expected kg, lb, m, km, or mi)`)
+  }
+}
 
 const LB_PER_KG = 2.2046226218
 const M_PER_MI = 1609.344

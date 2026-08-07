@@ -9,7 +9,7 @@ import type { CliContext } from '../cli/context.js'
 import { UsageError } from '../cli/errors.js'
 import { logVerbose, output } from '../cli/output.js'
 import { loadWorkoutData } from '../lib/data.js'
-import { resolveWeightUnit, weightLabel } from '../lib/units.js'
+import { parseUnitOverride, resolveWeightUnit, weightLabel } from '../lib/units.js'
 import { formatVolume, setVolume } from '../transform/workouts.js'
 
 interface WeeklyRow {
@@ -33,6 +33,7 @@ export function registerStatsCommand(program: Command, ctx: CliContext): void {
     .command('stats')
     .description('Show aggregate workout statistics')
     .option('--weeks <n>', 'Only consider the last N weeks', '0')
+    .option('--unit <unit>', 'Override display weight unit (kg, lb)')
     .option('--fresh', 'Ignore the local cache and re-sync the full history')
     .addHelpText(
       'after',
@@ -43,9 +44,10 @@ re-sync the full history.
 Examples:
   strong stats                       # all-time totals + weekly breakdown
   strong stats --weeks 12            # last 12 weeks
+  strong stats --unit lb             # force lb display regardless of prefs
   strong stats --json                # machine-readable`,
     )
-    .action(async (options: { weeks: string; fresh?: boolean }) => {
+    .action(async (options: { weeks: string; unit?: string; fresh?: boolean }) => {
       const weeks = Number.parseInt(options.weeks, 10)
       if (!Number.isFinite(weeks) || weeks < 0) {
         throw new UsageError(`Invalid --weeks: ${options.weeks}`)
@@ -54,7 +56,8 @@ Examples:
       const client = createClient()
       logVerbose(ctx, options.fresh ? 'Re-syncing full history...' : 'Fetching workouts...')
       const data = await loadWorkoutData(client, { fresh: options.fresh })
-      const weightUnit = resolveWeightUnit(data.weightUnit)
+      const weightUnit =
+        parseUnitOverride(options.unit)?.weight ?? resolveWeightUnit(data.weightUnit)
       const weightUnitLabel = weightLabel(weightUnit)
 
       let workouts = [...data.workouts]

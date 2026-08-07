@@ -1,14 +1,38 @@
 import { describe, expect, it } from 'vitest'
+import { UsageError } from '../../src/cli/errors.js'
 import {
   distanceLabel,
   distanceToDisplay,
   fmtNumber,
+  parseUnitOverride,
   resolveDistanceUnit,
   resolveWeightUnit,
   weightLabel,
   weightToDisplay,
 } from '../../src/lib/units.js'
 import { formatVolume } from '../../src/transform/workouts.js'
+
+describe('--unit override parsing', () => {
+  it('returns null when the flag is absent', () => {
+    expect(parseUnitOverride(undefined)).toBeNull()
+  })
+
+  it('maps weight values to a weight-only override', () => {
+    expect(parseUnitOverride('kg')).toEqual({ weight: 'KILOGRAMS' })
+    expect(parseUnitOverride('lb')).toEqual({ weight: 'POUNDS' })
+  })
+
+  it('maps distance values to a distance-only override', () => {
+    expect(parseUnitOverride('m')).toEqual({ distance: 'METERS' })
+    expect(parseUnitOverride('km')).toEqual({ distance: 'KILOMETERS' })
+    expect(parseUnitOverride('mi')).toEqual({ distance: 'MILES' })
+  })
+
+  it('rejects unknown values with a usage error', () => {
+    expect(() => parseUnitOverride('stone')).toThrow(UsageError)
+    expect(() => parseUnitOverride('')).toThrow(/expected kg, lb, m, km, or mi/)
+  })
+})
 
 describe('unit resolution (defaults)', () => {
   it('defaults a missing weight preference to POUNDS', () => {

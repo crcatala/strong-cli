@@ -51,7 +51,7 @@ src/
 docs/               # reverse-engineered API documentation
 captures/           # fixtures (public + synthetic, no real user data)
 tests/
-  unit/             # msw-free fetch-mock unit tests (78 tests)
+  unit/             # msw-free fetch-mock unit tests (90 tests)
   live/             # gated by RUN_LIVE_TESTS=1 (public+auth paths verified live)
 ```
 
@@ -87,10 +87,11 @@ tests/
 | `strong auth status` / `whoami` | Show auth state + token expiry |
 | `strong auth refresh` | Force token refresh |
 | `strong auth logout` | Clear stored session |
-| `strong workouts [--limit --since]` | List workout summaries (paginated) |
-| `strong workout <id>` | Full workout detail (sets/weights/RPE) |
+| `strong workouts [--limit --since --unit]` | List workout summaries (paginated) |
+| `strong workout <id> [--unit]` | Full workout detail (sets/weights/RPE) |
 | `strong exercises [--search --user]` | Browse the global exercise library (public!) |
-| `strong stats [--weeks]` | Volume/sets/weekly aggregation |
+| `strong templates [--search --limit]` | List routine templates (requires auth) |
+| `strong stats [--weeks --unit]` | Volume/sets/weekly aggregation |
 | `strong export [-o file]` | JSON export of workouts + exercises |
 
 ## Known risks
@@ -104,7 +105,7 @@ tests/
 ## Future work
 
 - Write API exploration (envelope-PUT sync, per strong-mcp) behind an explicit flag.
-- Templates/folders/tags listing.
+- Folders/tags listing (routine templates are **done** — `src/commands/templates.ts`).
 - ~~Local caching~~ JSON cache + continuation-cursor incremental sync is **done**
   (`src/lib/cache.ts`, wired into `workouts`/`stats`/`export`); SQLite would
   cut cache-file size/IO, and a re-sync-on-delete heuristic (e.g. periodic
@@ -112,8 +113,9 @@ tests/
 - ~~Unit conversions~~ Display conversion is **done** (`src/lib/units.ts`):
   the API stores canonical metric values (weights kg, distances m — verified
   live), the CLI converts to the account's `weightUnit`/`distanceUnit` prefs
-  for display (default POUNDS/MILES) and keeps raw values in JSON. Remaining
-  nicety: a `--unit` override flag for formatting regardless of prefs.
+  for display (default POUNDS/MILES) and keeps raw values in JSON. The
+  `--unit kg|lb|m|km|mi` override flag (`workouts`/`workout`/`stats`) is
+  **done** too — display formatting regardless of prefs, JSON untouched.
 
 ## Maintenance backlog
 

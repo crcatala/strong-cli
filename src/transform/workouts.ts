@@ -16,6 +16,7 @@ import type {
   LocalizedName,
   Measurement,
   RawLog,
+  Template,
   Workout,
   Set as WorkoutSet,
   WorkoutSummary,
@@ -49,6 +50,13 @@ export function measurementName(measurement: Measurement): string {
   const name = measurement.name
   if (!name) return measurement.id
   return name.custom ?? name.en ?? measurement.id
+}
+
+export function templateName(template: Template): string {
+  const name = template.name
+  if (!name) return template.id
+  if (typeof name === 'string') return name
+  return name.custom ?? name.en ?? template.id
 }
 
 /**
