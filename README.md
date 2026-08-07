@@ -188,6 +188,7 @@ strong export --json | jq .totals
 - `docs/auth-findings.md` — auth flow, token lifecycle, risks
 - `docs/data-model.md` — raw HAL model vs. normalized domain model
 - `PLAN.md` — design decisions, architecture, known risks, backlog
+- `RELEASING.md` — how to cut and publish a release
 - `captures/` — fixtures: public exercise library (real) + synthetic session/logs
 - API knowledge triangulated from `tolik518/strong-api-workout-sync`,
   `jerhinesmith/strong-mcp` (MIT), `TheAlexLichter/strong-exporter`,
@@ -196,7 +197,7 @@ strong export --json | jq .totals
 ## Tests
 
 ```bash
-npm test                          # 90 unit tests, mocked fetch
+npm test                          # 137 unit tests, mocked fetch
 RUN_LIVE_TESTS=1 STRONG_USERNAME=... STRONG_PASSWORD=... \
-  npx vitest run tests/live --no-file-parallelism   # real API (public + your account)
+  npm run test:live               # real API (public + your account)
 ```

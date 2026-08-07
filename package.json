@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "Unofficial read-only CLI for Strong Workout Tracker (strong.app)",
   "license": "MIT",
+  "author": "Christian Catalan",
+  "packageManager": "npm@11.16.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "strong",
     "strong-app",
@@ -21,25 +26,37 @@
   },
   "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "strong": "dist/cli.js"
   },
   "files": [
     "dist",
-    "README.md"
+    "!dist/**/*.map",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "npm run clean && tsc",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "dev": "bun src/cli.ts",
     "dev:tsx": "tsx src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:live": "RUN_LIVE_TESTS=1 vitest run tests/live --no-file-parallelism",
+    "test:live": "node scripts/require-live-test-env.mjs && vitest run tests/live --no-file-parallelism",
+    "test:package": "bash scripts/test-package.sh",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "verify": "npm run build && npm test && npm run lint && npm run test:package",
+    "release": "release-it",
+    "release:dry": "release-it --dry-run --no-npm --no-github",
+    "release:first": "release-it --first-release",
+    "release:prep": "bash scripts/prep-release.sh",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run verify"
   },
   "dependencies": {
     "cli-table3": "^0.6.5",
@@ -51,8 +68,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
+    "@release-it/keep-a-changelog": "^8.0.0",
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^2.0.0",
+    "release-it": "^21.0.1",
     "tsx": "^4.0.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
