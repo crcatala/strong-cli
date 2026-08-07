@@ -33,7 +33,7 @@ export function registerStatsCommand(program: Command, ctx: CliContext): void {
     .command('stats')
     .description('Show aggregate workout statistics')
     .option('--weeks <n>', 'Only consider the last N weeks', '0')
-    .option('--unit <unit>', 'Override display units (kg, lb, m, km, mi)')
+    .option('--unit <unit>', 'Override display weight unit (kg, lb)')
     .option('--fresh', 'Ignore the local cache and re-sync the full history')
     .addHelpText(
       'after',

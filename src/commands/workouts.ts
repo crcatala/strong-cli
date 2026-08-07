@@ -33,7 +33,7 @@ export function registerWorkoutsCommand(program: Command, ctx: CliContext): void
     .description('List workouts')
     .option('-l, --limit <n>', 'Maximum number of workouts to show', '100')
     .option('--since <date>', 'Only workouts on/after this date (YYYY-MM-DD or ISO)')
-    .option('--unit <unit>', 'Override display units (kg, lb, m, km, mi)')
+    .option('--unit <unit>', 'Override display weight unit (kg, lb)')
     .option('--fresh', 'Ignore the local cache and re-sync the full history')
     .addHelpText(
       'after',

@@ -134,6 +134,37 @@ describe('workout <id> command', () => {
     expect(out).not.toContain('kg')
   })
 
+  it('--json --unit lb keeps raw metric values in the output', async () => {
+    const fetchImpl = createFetchMock([
+      {
+        match: (url) => url.includes('/auth/login/refresh'),
+        handler: () =>
+          mockResponse({ accessToken: futureJwt(1200), refreshToken: 'rt-2', expiresIn: 1200 }),
+      },
+      {
+        match: (url) => url.includes('/logs/log-0001'),
+        handler: () => mockResponse(syntheticLog()),
+      },
+      {
+        match: (url) => url.includes('include=measurement'),
+        handler: () => mockResponse(syntheticUserResponse([])),
+      },
+      {
+        match: (url) => url.includes('/api/measurements'),
+        handler: () => mockResponse({ _embedded: { measurement: globalMeasurements } }),
+      },
+    ])
+
+    const h = harness(tokenEnv(tmp))
+    await h.run(['workout', 'log-0001', '--json', '--unit', 'lb'], fetchImpl)
+
+    const out = h.out.join('')
+    // Raw weight values must stay canonical kg, not lb.
+    expect(out).toContain('"weight": 60')
+    expect(out).toContain('"weight": 70')
+    expect(out).not.toContain('"weight": 132.28')
+  })
+
   it('reports a missing workout as not found instead of an error', async () => {
     const fetchImpl = createFetchMock([
       {
@@ -287,6 +318,22 @@ describe('templates command', () => {
     expect(out).toContain('"id": "tpl-0001"')
     expect(out).toContain('"name": "Push Day"')
     expect(out).not.toContain('Pull Day')
+  })
+
+  it('respects --limit', async () => {
+    const h = harness(tokenEnv(tmp))
+    await h.run(['templates', '--plain', '--limit', '1'], templatesFetch())
+
+    const out = h.out.join('')
+    expect(out).toContain('Push Day')
+    expect(out).not.toContain('Pull Day')
+  })
+
+  it('rejects --limit 0 as a usage error', async () => {
+    const h = harness(tokenEnv(tmp))
+    await expect(h.run(['templates', '--plain', '--limit', '0'], templatesFetch())).rejects.toThrow(
+      /Invalid --limit/,
+    )
   })
 
   it('requires authentication', async () => {
