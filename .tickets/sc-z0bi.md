@@ -1,6 +1,6 @@
 ---
 id: sc-z0bi
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-08-06T21:04:54Z
@@ -21,3 +21,9 @@ Add a --unit <kg|lb|km|mi|m> option (naming TBD) to the display commands (workou
 
 --unit flag exists on the agreed commands, overrides account prefs for display only. JSON output still contains raw metric values. Help text updated. Unit tests cover the override (e.g. --unit kg on a POUNDS-pref account). Existing 78 tests pass.
 
+
+## Notes
+
+**2026-08-07T04:41:58Z**
+
+Shipped in PR (chore/quick-wins): --unit kg|lb|m|km|mi on workouts/workout/stats, display-only (JSON keeps canonical values). parseUnitOverride in src/lib/units.ts; 5 new unit tests + 4 command tests.

@@ -10,7 +10,7 @@ import type { CliContext } from '../cli/context.js'
 import { UsageError } from '../cli/errors.js'
 import { logVerbose, output } from '../cli/output.js'
 import { loadWorkoutData } from '../lib/data.js'
-import { resolveWeightUnit, weightLabel } from '../lib/units.js'
+import { parseUnitOverride, resolveWeightUnit, weightLabel } from '../lib/units.js'
 import { formatVolume, toSummary } from '../transform/workouts.js'
 
 function formatDate(iso: string | null): string {
@@ -33,6 +33,7 @@ export function registerWorkoutsCommand(program: Command, ctx: CliContext): void
     .description('List workouts')
     .option('-l, --limit <n>', 'Maximum number of workouts to show', '100')
     .option('--since <date>', 'Only workouts on/after this date (YYYY-MM-DD or ISO)')
+    .option('--unit <unit>', 'Override display units (kg, lb, m, km, mi)')
     .option('--fresh', 'Ignore the local cache and re-sync the full history')
     .addHelpText(
       'after',
@@ -47,9 +48,10 @@ Examples:
   strong workouts                     # latest 100 workouts
   strong workouts --limit 5 --table   # table view
   strong workouts --since 2026-01-01  # workouts this year
+  strong workouts --unit lb           # force lb display regardless of prefs
   strong workouts --json              # full machine-readable output`,
     )
-    .action(async (options: { limit: string; since?: string; fresh?: boolean }) => {
+    .action(async (options: { limit: string; since?: string; unit?: string; fresh?: boolean }) => {
       const limit = Number.parseInt(options.limit, 10)
       if (!Number.isFinite(limit) || limit <= 0) {
         throw new UsageError(`Invalid --limit: ${options.limit}`)
@@ -73,7 +75,8 @@ Examples:
       }
       summaries = sortByDateDesc(summaries).slice(0, limit)
 
-      const weightUnit = resolveWeightUnit(data.weightUnit)
+      const weightUnit =
+        parseUnitOverride(options.unit)?.weight ?? resolveWeightUnit(data.weightUnit)
       const weightUnitLabel = weightLabel(weightUnit)
       output(ctx, summaries, {
         formatter: () => {
