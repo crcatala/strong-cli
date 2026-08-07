@@ -107,6 +107,7 @@ strong auth logout             # clear credentials
 strong workouts                 # latest 100 workouts (each row shows the workout ID)
 strong workouts --limit 5 --table
 strong workouts --since 2026-01-01
+strong workouts --tag push      # only workouts with push-tagged exercises
 strong workouts --unit kg       # force kg display regardless of account prefs
 strong workout <id>             # full detail (copy the ID from `strong workouts`)
 strong workout <id> --unit lb   # force lb display in the detail view
@@ -129,6 +130,13 @@ Folder/tag entities come from the user document (`include=folder` /
 exercises. Listings show id + name in json/plain/table; `--search`/`--limit`
 work like on `templates`.
 
+`--tag <name>` (also `-t`) filters `workouts`/`stats`/`export` to workouts
+that contain at least one exercise carrying the tag. Matching is
+case-insensitive against the tag name or id; the tag's exercise set comes
+from the user document (verified live: tags ship complete `_links.measurement`
+lists). `strong export --tag X` also records `"filter": {"tag": "X"}` in the
+export document so filtered exports are self-describing.
+
 ### Exercise library (public — works without auth)
 
 ```bash
@@ -142,8 +150,10 @@ strong exercises --user              # + your custom exercises (needs auth)
 ```bash
 strong stats               # all-time totals, weekly volume, top exercises
 strong stats --weeks 12
+strong stats --tag push    # aggregate only push-tagged workouts
 strong stats --unit lb     # force lb display regardless of account prefs
 strong export -o strong-export.json  # full JSON export
+strong export --tag push   # export only push-tagged workouts
 strong export --json | jq .totals
 ```
 

@@ -8,9 +8,9 @@ import { createClient } from '../api/factory.js'
 import type { CliContext } from '../cli/context.js'
 import { UsageError } from '../cli/errors.js'
 import { logInfo, logVerbose, output } from '../cli/output.js'
-import { loadWorkoutData } from '../lib/data.js'
+import { loadWorkoutData, resolveTaggedMeasurementIds } from '../lib/data.js'
 import { parseUnitOverride, resolveWeightUnit, weightLabel } from '../lib/units.js'
-import { formatVolume, setVolume } from '../transform/workouts.js'
+import { formatVolume, setVolume, workoutHasAnyTaggedExercise } from '../transform/workouts.js'
 
 interface WeeklyRow {
   week: string
@@ -33,6 +33,7 @@ export function registerStatsCommand(program: Command, ctx: CliContext): void {
     .command('stats')
     .description('Show aggregate workout statistics')
     .option('--weeks <n>', 'Only consider the last N weeks', '0')
+    .option('-t, --tag <name>', 'Only workouts containing exercises with this tag')
     .option('--unit <unit>', 'Override display weight unit (kg, lb)')
     .option('--fresh', 'Ignore the local cache and re-sync the full history')
     .addHelpText(
@@ -44,10 +45,11 @@ re-sync the full history.
 Examples:
   strong stats                       # all-time totals + weekly breakdown
   strong stats --weeks 12            # last 12 weeks
+  strong stats --tag push            # only push-tagged workouts
   strong stats --unit lb             # force lb display regardless of prefs
   strong stats --json                # machine-readable`,
     )
-    .action(async (options: { weeks: string; unit?: string; fresh?: boolean }) => {
+    .action(async (options: { weeks: string; tag?: string; unit?: string; fresh?: boolean }) => {
       const weeks = Number.parseInt(options.weeks, 10)
       if (!Number.isFinite(weeks) || weeks < 0) {
         throw new UsageError(`Invalid --weeks: ${options.weeks}`)
@@ -64,6 +66,11 @@ Examples:
       const weightUnitLabel = weightLabel(weightUnit)
 
       let workouts = [...data.workouts]
+      if (options.tag) {
+        logVerbose(ctx, `Filtering by tag: ${options.tag}`)
+        const taggedIds = resolveTaggedMeasurementIds(data.tags, options.tag)
+        workouts = workouts.filter((w) => workoutHasAnyTaggedExercise(w, taggedIds))
+      }
       if (weeks > 0) {
         const cutoff = Date.now() - weeks * 7 * 86400000
         workouts = workouts.filter((w) => {

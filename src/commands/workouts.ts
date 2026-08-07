@@ -9,9 +9,9 @@ import type { WorkoutSummary } from '../api/types.js'
 import type { CliContext } from '../cli/context.js'
 import { UsageError } from '../cli/errors.js'
 import { logInfo, logVerbose, output } from '../cli/output.js'
-import { loadWorkoutData } from '../lib/data.js'
+import { loadWorkoutData, resolveTaggedMeasurementIds } from '../lib/data.js'
 import { parseUnitOverride, resolveWeightUnit, weightLabel } from '../lib/units.js'
-import { formatVolume, toSummary } from '../transform/workouts.js'
+import { formatVolume, toSummary, workoutHasAnyTaggedExercise } from '../transform/workouts.js'
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
@@ -33,6 +33,7 @@ export function registerWorkoutsCommand(program: Command, ctx: CliContext): void
     .description('List workouts')
     .option('-l, --limit <n>', 'Maximum number of workouts to show', '100')
     .option('--since <date>', 'Only workouts on/after this date (YYYY-MM-DD or ISO)')
+    .option('-t, --tag <name>', 'Only workouts containing exercises with this tag')
     .option('--unit <unit>', 'Override display weight unit (kg, lb)')
     .option('--fresh', 'Ignore the local cache and re-sync the full history')
     .addHelpText(
@@ -48,80 +49,96 @@ Examples:
   strong workouts                     # latest 100 workouts
   strong workouts --limit 5 --table   # table view
   strong workouts --since 2026-01-01  # workouts this year
+  strong workouts --tag push         # workouts with push-tagged exercises
   strong workouts --unit lb           # force lb display regardless of prefs
   strong workouts --json              # full machine-readable output`,
     )
-    .action(async (options: { limit: string; since?: string; unit?: string; fresh?: boolean }) => {
-      const limit = Number.parseInt(options.limit, 10)
-      if (!Number.isFinite(limit) || limit <= 0) {
-        throw new UsageError(`Invalid --limit: ${options.limit}`)
-      }
-
-      const client = createClient()
-      logVerbose(ctx, options.fresh ? 'Re-syncing full history...' : 'Fetching workouts...')
-      const data = await loadWorkoutData(client, { fresh: options.fresh })
-      if (data.cache.fullResync === 'interval') {
-        logInfo(ctx, 'Full re-sync triggered by the sync interval — pruning deleted workouts')
-      }
-
-      let summaries = data.workouts.map(toSummary)
-      if (options.since) {
-        const since = new Date(options.since)
-        if (Number.isNaN(since.getTime())) {
-          throw new UsageError(`Invalid --since date: ${options.since}`)
+    .action(
+      async (options: {
+        limit: string
+        since?: string
+        tag?: string
+        unit?: string
+        fresh?: boolean
+      }) => {
+        const limit = Number.parseInt(options.limit, 10)
+        if (!Number.isFinite(limit) || limit <= 0) {
+          throw new UsageError(`Invalid --limit: ${options.limit}`)
         }
-        const sinceMs = since.getTime()
-        summaries = summaries.filter((w) => {
-          const t = w.startDate ? new Date(w.startDate).getTime() : 0
-          return t >= sinceMs
-        })
-      }
-      summaries = sortByDateDesc(summaries).slice(0, limit)
 
-      const weightUnit =
-        parseUnitOverride(options.unit)?.weight ?? resolveWeightUnit(data.weightUnit)
-      const weightUnitLabel = weightLabel(weightUnit)
-      output(ctx, summaries, {
-        formatter: () => {
-          if (summaries.length === 0) return '(no workouts)'
-          return summaries
-            .map((w) => {
-              const date = formatDate(w.date)
-              const time = formatTime(w.startDate)
-              const name = (w.name ?? '(unnamed)').padEnd(32)
-              const volume = formatVolume(w.volume, weightUnit)
-              const id = ctx.colors.muted(w.id)
-              return `${date} ${time}  ${name}  ${w.exercises} ex · ${w.completedSets} sets · ${volume} ${weightUnitLabel}  ${id}`.trimEnd()
-            })
-            .join('\n')
-        },
-        tableFormatter: () => {
-          if (summaries.length === 0) return '(no workouts)'
-          const table = new Table({
-            head: [
-              'Date',
-              'Time',
-              'Name',
-              'ID',
-              'Ex',
-              'Sets',
-              `Volume (${weightUnitLabel})`.trim(),
-            ],
-            style: { head: [], border: [] },
-          })
-          for (const w of summaries) {
-            table.push([
-              formatDate(w.date),
-              formatTime(w.startDate),
-              w.name ?? '(unnamed)',
-              w.id,
-              w.exercises,
-              w.completedSets,
-              formatVolume(w.volume, weightUnit),
-            ])
+        const client = createClient()
+        logVerbose(ctx, options.fresh ? 'Re-syncing full history...' : 'Fetching workouts...')
+        const data = await loadWorkoutData(client, { fresh: options.fresh })
+        if (data.cache.fullResync === 'interval') {
+          logInfo(ctx, 'Full re-sync triggered by the sync interval — pruning deleted workouts')
+        }
+
+        let workouts = data.workouts
+        if (options.tag) {
+          logVerbose(ctx, `Filtering by tag: ${options.tag}`)
+          const taggedIds = resolveTaggedMeasurementIds(data.tags, options.tag)
+          workouts = workouts.filter((w) => workoutHasAnyTaggedExercise(w, taggedIds))
+        }
+
+        let summaries = workouts.map(toSummary)
+        if (options.since) {
+          const since = new Date(options.since)
+          if (Number.isNaN(since.getTime())) {
+            throw new UsageError(`Invalid --since date: ${options.since}`)
           }
-          return table.toString()
-        },
-      })
-    })
+          const sinceMs = since.getTime()
+          summaries = summaries.filter((w) => {
+            const t = w.startDate ? new Date(w.startDate).getTime() : 0
+            return t >= sinceMs
+          })
+        }
+        summaries = sortByDateDesc(summaries).slice(0, limit)
+
+        const weightUnit =
+          parseUnitOverride(options.unit)?.weight ?? resolveWeightUnit(data.weightUnit)
+        const weightUnitLabel = weightLabel(weightUnit)
+        output(ctx, summaries, {
+          formatter: () => {
+            if (summaries.length === 0) return '(no workouts)'
+            return summaries
+              .map((w) => {
+                const date = formatDate(w.date)
+                const time = formatTime(w.startDate)
+                const name = (w.name ?? '(unnamed)').padEnd(32)
+                const volume = formatVolume(w.volume, weightUnit)
+                const id = ctx.colors.muted(w.id)
+                return `${date} ${time}  ${name}  ${w.exercises} ex · ${w.completedSets} sets · ${volume} ${weightUnitLabel}  ${id}`.trimEnd()
+              })
+              .join('\n')
+          },
+          tableFormatter: () => {
+            if (summaries.length === 0) return '(no workouts)'
+            const table = new Table({
+              head: [
+                'Date',
+                'Time',
+                'Name',
+                'ID',
+                'Ex',
+                'Sets',
+                `Volume (${weightUnitLabel})`.trim(),
+              ],
+              style: { head: [], border: [] },
+            })
+            for (const w of summaries) {
+              table.push([
+                formatDate(w.date),
+                formatTime(w.startDate),
+                w.name ?? '(unnamed)',
+                w.id,
+                w.exercises,
+                w.completedSets,
+                formatVolume(w.volume, weightUnit),
+              ])
+            }
+            return table.toString()
+          },
+        })
+      },
+    )
 }
