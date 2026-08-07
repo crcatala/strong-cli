@@ -1,5 +1,9 @@
 # strong-cli
 
+[![npm version](https://img.shields.io/npm/v/@crcatala/strong-cli.svg)](https://www.npmjs.com/package/@crcatala/strong-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/crcatala/strong-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/crcatala/strong-cli/actions/workflows/ci.yml)
+
 Unofficial read-only CLI for [Strong Workout Tracker](https://www.strong.app/), built
 for personal-productivity/AI-agent use. Reverse-engineered from the app's backend
 (`https://back.strong.app`) — **no official API exists**, so this is built on
