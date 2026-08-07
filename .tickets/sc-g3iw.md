@@ -1,6 +1,6 @@
 ---
 id: sc-g3iw
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-08-06T21:04:54Z
@@ -21,3 +21,9 @@ Scope: add a strong templates command using the existing client method; then add
 
 At minimum a strong templates command (list + detail if sensible). Folders/tags commands if live API shape is confirmed. Types, client methods, and tests for anything added. Docs updated. Existing tests pass; live tests run where credentials available.
 
+
+## Notes
+
+**2026-08-07T04:42:01Z**
+
+Templates portion shipped in PR chore/quick-wins: strong templates command (src/commands/templates.ts) with --search/--limit, templateName helper, 3 command tests. Folders/tags remain — tracked in new ticket sc-sfn8.
