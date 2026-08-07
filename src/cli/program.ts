@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { Command, Option } from 'commander'
 import { registerAuthCommand } from '../commands/auth.js'
 import { registerExercisesCommand } from '../commands/exercises.js'
@@ -11,7 +12,19 @@ import { registerWorkoutsCommand } from '../commands/workouts.js'
 import type { CliContext } from './context.js'
 import { OUTPUT_FORMATS } from './context.js'
 
-const VERSION = '0.1.0'
+// Read the version from package.json so `--version` and the banner never drift
+// from the published artifact. The relative path resolves from both src/ (dev,
+// via bun/tsx) and dist/ (built), and npm always ships package.json at the root.
+const VERSION = (() => {
+  try {
+    const pkg = JSON.parse(
+      readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+    ) as { version?: string }
+    return pkg.version ?? '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+})()
 
 export function createProgram(ctx: CliContext): Command {
   const program = new Command()

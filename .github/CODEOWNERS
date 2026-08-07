@@ -1,0 +1,5 @@
+# CODEOWNERS - GitHub Code Owners file
+# https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+
+# Require maintainer review for workflow changes
+/.github/workflows/ @crcatala
