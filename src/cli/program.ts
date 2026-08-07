@@ -2,7 +2,9 @@ import { Command, Option } from 'commander'
 import { registerAuthCommand } from '../commands/auth.js'
 import { registerExercisesCommand } from '../commands/exercises.js'
 import { registerExportCommand } from '../commands/export.js'
+import { registerFoldersCommand } from '../commands/folders.js'
 import { registerStatsCommand } from '../commands/stats.js'
+import { registerTagsCommand } from '../commands/tags.js'
 import { registerTemplatesCommand } from '../commands/templates.js'
 import { registerWorkoutCommand } from '../commands/workout.js'
 import { registerWorkoutsCommand } from '../commands/workouts.js'
@@ -47,6 +49,8 @@ ${formatExample('strong workouts', 'List recent workouts')}
 ${formatExample('strong workout <id>', 'Show a single workout in detail')}
 ${formatExample('strong exercises --search squat', 'Search the exercise library')}
 ${formatExample('strong templates', 'List routine templates')}
+${formatExample('strong folders', 'List template folders')}
+${formatExample('strong tags', 'List exercise tags')}
 ${formatExample('strong stats --weeks 12', 'Volume/set statistics')}
 ${formatExample('strong export -o strong-export.json', 'Export everything to JSON')}
 
@@ -63,6 +67,9 @@ ${ctx.colors.section('Environment Variables')}
   ${ctx.colors.option('STRONG_REFRESH_TOKEN')} ${ctx.colors.muted('Refresh token (used with the above)')}
   ${ctx.colors.option('STRONG_BACKEND')}   ${ctx.colors.muted('API base URL (default https://back.strong.app)')}
   ${ctx.colors.option('STRONG_FORMAT')}    ${ctx.colors.muted('Default output format (json|plain|table)')}
+  ${ctx.colors.option('STRONG_MAX_RETRIES')}  ${ctx.colors.muted('Retries for transient errors (default 2)')}
+  ${ctx.colors.option('STRONG_RETRY_BACKOFF_MS')}  ${ctx.colors.muted('Base retry backoff in ms (default 250)')}
+  ${ctx.colors.option('STRONG_FULL_SYNC_INTERVAL_DAYS')}  ${ctx.colors.muted('Days between full cache re-syncs (default 30)')}
   ${ctx.colors.option('NO_COLOR')}     ${ctx.colors.muted('Disable colors')}
 `,
   )
@@ -94,6 +101,8 @@ ${ctx.colors.section('Environment Variables')}
   registerWorkoutCommand(program, ctx)
   registerExercisesCommand(program, ctx)
   registerTemplatesCommand(program, ctx)
+  registerFoldersCommand(program, ctx)
+  registerTagsCommand(program, ctx)
   registerStatsCommand(program, ctx)
   registerExportCommand(program, ctx)
 

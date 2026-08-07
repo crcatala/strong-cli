@@ -12,12 +12,15 @@
 import type { LogsWalk, StrongClient } from '../api/client.js'
 import type { Measurement, RawLog, Workout } from '../api/types.js'
 import { ApiError, AuthError } from '../cli/errors.js'
+import { getEnv } from '../config/config.js'
 import { buildMeasurementMap, transformLogs } from '../transform/workouts.js'
 import {
   CACHE_VERSION,
+  fullResyncDue,
   getCacheFilePath,
   loadCache,
   mergeLogs,
+  parseFullSyncIntervalDays,
   saveCache,
   type WorkoutCache,
 } from './cache.js'
@@ -27,6 +30,11 @@ export interface LoadOptions {
   fresh?: boolean
   /** Override the cache file path (tests). */
   cachePath?: string
+  /**
+   * Days between automatic full re-syncs (deleted-workout prune). Defaults
+   * to STRONG_FULL_SYNC_INTERVAL_DAYS (30).
+   */
+  fullSyncIntervalDays?: number
 }
 
 export interface WorkoutData {
@@ -39,8 +47,16 @@ export interface WorkoutData {
   /** Raw preference strings (e.g. 'POUNDS' / 'MILES'), null when absent. */
   weightUnit: string | null
   distanceUnit: string | null
-  /** Cache provenance — fromCache=false means a full walk happened this run. */
-  cache: { fromCache: boolean; syncedAt?: string; finalized?: boolean }
+  /**
+   * Cache provenance — fromCache=false means a full walk happened this run.
+   * `fullResync` says why when it was not the user's explicit --fresh.
+   */
+  cache: {
+    fromCache: boolean
+    syncedAt?: string
+    finalized?: boolean
+    fullResync?: 'fresh' | 'interval' | null
+  }
 }
 
 export async function loadWorkoutData(
@@ -53,7 +69,7 @@ export async function loadWorkoutData(
   }
   const userId = session.userId
 
-  const [{ logs, cache }, userResp, globalMeasurements] = await Promise.all([
+  const [{ logs, cache, fullResync }, userResp, globalMeasurements] = await Promise.all([
     syncWorkoutLogs(client, userId, opts),
     client.getUser(userId, { includes: ['measurement'] }),
     client.getAllMeasurements(),
@@ -80,6 +96,7 @@ export async function loadWorkoutData(
       fromCache: cache !== null,
       syncedAt: cache?.syncedAt,
       finalized: cache?.finalized,
+      fullResync,
     },
   }
 }
@@ -94,9 +111,22 @@ async function syncWorkoutLogs(
   client: StrongClient,
   userId: string,
   opts: LoadOptions,
-): Promise<{ logs: RawLog[]; cache: WorkoutCache | null }> {
+): Promise<{
+  logs: RawLog[]
+  cache: WorkoutCache | null
+  fullResync: 'fresh' | 'interval' | null
+}> {
   const cachePath = opts.cachePath ?? getCacheFilePath()
   let cached: WorkoutCache | null = opts.fresh ? null : loadCache(userId, cachePath)
+
+  // Auto-heal: when the cache has no recorded full sync (upgrade path) or the
+  // interval since the last one has elapsed, do a full re-walk instead of an
+  // incremental resume — the only way to drop deleted workouts (no tombstones).
+  const intervalDays =
+    opts.fullSyncIntervalDays ??
+    parseFullSyncIntervalDays(getEnv()['STRONG_FULL_SYNC_INTERVAL_DAYS'])
+  const autoHeal = cached !== null && fullResyncDue(cached, Date.now(), intervalDays)
+  if (opts.fresh || autoHeal) cached = null
 
   let walk: LogsWalk
   try {
@@ -122,11 +152,15 @@ async function syncWorkoutLogs(
   const changed = !cached || logs !== cached.logs || walk.finalized !== cached.finalized
 
   if (changed) {
+    const now = new Date().toISOString()
     saveCache(
       {
         version: CACHE_VERSION,
         userId,
-        syncedAt: new Date().toISOString(),
+        syncedAt: now,
+        // A full walk (fresh/auto-heal/first-ever) resets the auto-heal clock;
+        // incremental saves preserve the last full-sync timestamp.
+        lastFullSyncAt: !cached || autoHeal ? now : cached.lastFullSyncAt,
         continuation,
         finalized: walk.finalized,
         logs,
@@ -135,5 +169,5 @@ async function syncWorkoutLogs(
     )
   }
 
-  return { logs, cache: cached }
+  return { logs, cache: cached, fullResync: opts.fresh ? 'fresh' : autoHeal ? 'interval' : null }
 }

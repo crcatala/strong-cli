@@ -1,6 +1,6 @@
 ---
 id: sc-2wqs
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-08-06T21:04:34Z
@@ -20,4 +20,10 @@ Options, in order of preference: (a) thread env explicitly through the code path
 ## Acceptance Criteria
 
 No module-global env mutation can cause cross-test-file races (or tests are made serial as a documented stopgap). All existing 78 unit tests still pass. run.ts env injection behavior unchanged. Tests for the new approach exist and reset state in afterEach where applicable.
+
+## Notes
+
+**2026-08-07T12:00:00Z**
+
+Shipped in PR (chore/polish-cache-retry-folders-config) — **option (b) stopgap, hardened**. `setEnv` now snapshots its input (later mutation of the passed object cannot leak in) and a new `resetEnv()` restores the real `process.env`; config.test.ts uses `resetEnv()` in `afterEach` and adds two tests pinning the contract (snapshot isolation, reset-to-process.env). The documented rule lives in the config.ts module docstring. Full per-invocation plumbing (option (a)) was deliberately deferred: it would thread an Env through every command/factory call site for a race that Vitest's default per-file module isolation already prevents — the residual risk is intra-file leakage and `--no-file-parallelism`/isolation:false configs, which the reset rule covers. Revisit (a) if CLI-level tests ever exercise config paths heavily. Closed.
 

@@ -121,8 +121,125 @@ describe('StrongClient', () => {
         handler: () => mockResponse({}, { status: 500 }),
       },
     ])
-    const client = makeClient(store, fetchImpl)
+    const client = new StrongClient({
+      baseUrl: 'https://back.strong.app',
+      store,
+      fetch: fetchImpl,
+      retry: { baseDelayMs: 1 },
+    })
     await expect(client.getUser('user-1')).rejects.toBeInstanceOf(ApiError)
+  })
+
+  it('retries 5xx then succeeds', async () => {
+    const store = memStore({
+      accessToken: futureJwt(1200),
+      refreshToken: 'rt',
+      userId: 'user-1',
+      expiresAt: Date.now() + 1200_000,
+    })
+    let calls = 0
+    const fetchImpl = vi.fn(async () => {
+      calls++
+      return calls < 3 ? mockResponse({}, { status: 500 }) : mockResponse(syntheticUserResponse([]))
+    })
+    // Tiny base delay keeps the test fast; jittered sleep is ~1ms.
+    const client = new StrongClient({
+      baseUrl: 'https://back.strong.app',
+      store,
+      fetch: fetchImpl,
+      retry: { baseDelayMs: 1 },
+    })
+    const user = await client.getUser('user-1')
+    expect(user.id).toBe('test-user-123')
+    expect(calls).toBe(3) // 2 retries after the initial failure
+  })
+
+  it('retries 429 rate limits with backoff then succeeds', async () => {
+    const store = memStore({
+      accessToken: futureJwt(1200),
+      refreshToken: 'rt',
+      userId: 'user-1',
+      expiresAt: Date.now() + 1200_000,
+    })
+    let calls = 0
+    const fetchImpl = vi.fn(async () => {
+      calls++
+      if (calls < 3) {
+        return mockResponse(
+          { message: 'Something went wrong. Please try again later.' },
+          { status: 429 },
+        )
+      }
+      return mockResponse(syntheticUserResponse([]))
+    })
+    // Tiny base delay keeps the test fast; jittered sleep is ~1ms.
+    const client = new StrongClient({
+      baseUrl: 'https://back.strong.app',
+      store,
+      fetch: fetchImpl,
+      retry: { baseDelayMs: 1 },
+    })
+    const user = await client.getUser('user-1')
+    expect(user.id).toBe('test-user-123')
+    expect(calls).toBe(3)
+  })
+
+  it('exhausts retries on a persistent 429 soft rate limit', async () => {
+    const store = memStore({
+      accessToken: futureJwt(1200),
+      refreshToken: 'rt',
+      userId: 'user-1',
+      expiresAt: Date.now() + 1200_000,
+    })
+    const fetchImpl = vi.fn(async () =>
+      mockResponse({ message: 'Something went wrong. Please try again later.' }, { status: 429 }),
+    )
+    const client = new StrongClient({
+      baseUrl: 'https://back.strong.app',
+      store,
+      fetch: fetchImpl,
+      retry: { baseDelayMs: 1 },
+    })
+    await expect(client.getUser('user-1')).rejects.toBeInstanceOf(ApiError)
+    expect(fetchImpl).toHaveBeenCalledTimes(3) // initial + 2 retries
+  })
+
+  it('honors retryRateLimited=false (429 fails through immediately)', async () => {
+    const store = memStore({
+      accessToken: futureJwt(1200),
+      refreshToken: 'rt',
+      userId: 'user-1',
+      expiresAt: Date.now() + 1200_000,
+    })
+    const fetchImpl = vi.fn(async () =>
+      mockResponse({ message: 'Something went wrong. Please try again later.' }, { status: 429 }),
+    )
+    const client = new StrongClient({
+      baseUrl: 'https://back.strong.app',
+      store,
+      fetch: fetchImpl,
+      retry: { retryRateLimited: false },
+    })
+    await expect(client.getUser('user-1')).rejects.toBeInstanceOf(ApiError)
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+  })
+
+  it('respects a custom maxRetries', async () => {
+    const store = memStore({
+      accessToken: futureJwt(1200),
+      refreshToken: 'rt',
+      userId: 'user-1',
+      expiresAt: Date.now() + 1200_000,
+    })
+    const fetchImpl = vi.fn(async () => mockResponse({}, { status: 503 }))
+    const client = new StrongClient({
+      baseUrl: 'https://back.strong.app',
+      store,
+      fetch: fetchImpl,
+      retry: { maxRetries: 5, baseDelayMs: 1 },
+    })
+    await expect(client.getUser('user-1')).rejects.toBeInstanceOf(ApiError)
+    expect(fetchImpl).toHaveBeenCalledTimes(6) // initial + 5 retries
   })
 
   it('paginates logs following _links.next', async () => {

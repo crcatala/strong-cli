@@ -71,8 +71,11 @@ behaviors:
   ≈ 10s); afterwards it's a couple of pages.
 - `--fresh` on `workouts`/`stats`/`export` forces a full re-sync.
 - A stale cursor (HTTP 400) triggers an automatic full re-walk.
-- Deleted workouts are not tombstoned by the API — `--fresh` is the only way
-  to drop them from the cache.
+- Deleted workouts are not tombstoned by the API. To keep the cache honest
+  without manual intervention, a **full re-sync runs automatically** every
+  `STRONG_FULL_SYNC_INTERVAL_DAYS` (default 30) since the last full walk —
+  `--fresh` still forces one immediately. An informational note is printed
+  to stderr when the auto re-sync fires.
 
 ## Units
 
@@ -109,13 +112,22 @@ strong workout <id>             # full detail (copy the ID from `strong workouts
 strong workout <id> --unit lb   # force lb display in the detail view
 ```
 
-### Templates (requires auth)
+### Templates, folders & tags (require auth)
 
 ```bash
 strong templates                    # first 100 routine templates
 strong templates --search push      # filter by name
 strong templates --table
+strong folders                      # template folders
+strong folders --search plan
+strong tags                         # exercise tags
+strong tags --search push
 ```
+
+Folder/tag entities come from the user document (`include=folder` /
+`include=tag`, shapes verified live): folders organize templates, tags label
+exercises. Listings show id + name in json/plain/table; `--search`/`--limit`
+work like on `templates`.
 
 ### Exercise library (public — works without auth)
 
@@ -154,6 +166,9 @@ strong export --json | jq .totals
 | `STRONG_ACCESS_TOKEN` / `STRONG_REFRESH_TOKEN` | Reuse an existing session |
 | `STRONG_BACKEND` | API base URL (default `https://back.strong.app`) |
 | `STRONG_CLIENT_BUILD` / `STRONG_CLIENT_PLATFORM` | Client fingerprint overrides |
+| `STRONG_MAX_RETRIES` | Retries for transient errors, 5xx + 429 (default 2) |
+| `STRONG_RETRY_BACKOFF_MS` | Base retry backoff in ms, jittered per attempt (default 250) |
+| `STRONG_FULL_SYNC_INTERVAL_DAYS` | Days between automatic full cache re-syncs (default 30) |
 | `STRONG_FORMAT` | Default output format |
 | `NO_COLOR` | Disable colors |
 

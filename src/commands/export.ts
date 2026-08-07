@@ -5,7 +5,7 @@ import { writeFileSync } from 'node:fs'
 import type { Command } from 'commander'
 import { createClient } from '../api/factory.js'
 import type { CliContext } from '../cli/context.js'
-import { logVerbose, output } from '../cli/output.js'
+import { logInfo, logVerbose, output } from '../cli/output.js'
 import { loadWorkoutData } from '../lib/data.js'
 
 export function registerExportCommand(program: Command, ctx: CliContext): void {
@@ -28,6 +28,9 @@ Examples:
       const client = createClient()
       logVerbose(ctx, options.fresh ? 'Re-syncing full history...' : 'Fetching data...')
       const data = await loadWorkoutData(client, { fresh: options.fresh })
+      if (data.cache.fullResync === 'interval') {
+        logInfo(ctx, 'Full re-sync triggered by the sync interval — pruning deleted workouts')
+      }
 
       const exportDoc = {
         exportedAt: new Date().toISOString(),

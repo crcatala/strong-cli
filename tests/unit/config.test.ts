@@ -6,7 +6,9 @@ import type { TokenState } from '../../src/api/token-manager.js'
 import {
   clearSession,
   configFileStore,
+  getEnv,
   getSessionInfo,
+  resetEnv,
   sessionStore,
   setEnv,
 } from '../../src/config/config.js'
@@ -70,8 +72,25 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  setEnv({})
+  // Env injection is module-global: every test that calls setEnv must reset
+  // here so a fake env can never leak into sibling tests (see config.ts).
+  resetEnv()
   rmSync(tmp, { recursive: true, force: true })
+})
+
+describe('env injection contract', () => {
+  it('setEnv snapshots the passed object (later mutations do not leak in)', () => {
+    const injected: Record<string, string | undefined> = { XDG_CONFIG_HOME: tmp }
+    setEnv(injected)
+    injected['XDG_CONFIG_HOME'] = '/mutated' // must not affect the snapshot
+    expect(getEnv()['XDG_CONFIG_HOME']).toBe(tmp)
+  })
+
+  it('resetEnv restores the real process environment', () => {
+    setEnv({ XDG_CONFIG_HOME: '/fake', STRONG_ACCESS_TOKEN: 'leaked' })
+    resetEnv()
+    expect(getEnv()).toEqual(process.env)
+  })
 })
 
 describe('config file store', () => {

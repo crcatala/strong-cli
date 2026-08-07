@@ -8,7 +8,7 @@ import { createClient } from '../api/factory.js'
 import type { WorkoutSummary } from '../api/types.js'
 import type { CliContext } from '../cli/context.js'
 import { UsageError } from '../cli/errors.js'
-import { logVerbose, output } from '../cli/output.js'
+import { logInfo, logVerbose, output } from '../cli/output.js'
 import { loadWorkoutData } from '../lib/data.js'
 import { parseUnitOverride, resolveWeightUnit, weightLabel } from '../lib/units.js'
 import { formatVolume, toSummary } from '../transform/workouts.js'
@@ -60,6 +60,9 @@ Examples:
       const client = createClient()
       logVerbose(ctx, options.fresh ? 'Re-syncing full history...' : 'Fetching workouts...')
       const data = await loadWorkoutData(client, { fresh: options.fresh })
+      if (data.cache.fullResync === 'interval') {
+        logInfo(ctx, 'Full re-sync triggered by the sync interval — pruning deleted workouts')
+      }
 
       let summaries = data.workouts.map(toSummary)
       if (options.since) {

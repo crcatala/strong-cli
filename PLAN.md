@@ -91,6 +91,8 @@ tests/
 | `strong workout <id> [--unit]` | Full workout detail (sets/weights/RPE) |
 | `strong exercises [--search --user]` | Browse the global exercise library (public!) |
 | `strong templates [--search --limit]` | List routine templates (requires auth) |
+| `strong folders [--search --limit]` | List template folders (requires auth) |
+| `strong tags [--search --limit]` | List exercise tags (requires auth) |
 | `strong stats [--weeks --unit]` | Volume/sets/weekly aggregation |
 | `strong export [-o file]` | JSON export of workouts + exercises |
 
@@ -105,11 +107,17 @@ tests/
 ## Future work
 
 - Write API exploration (envelope-PUT sync, per strong-mcp) behind an explicit flag.
-- Folders/tags listing (routine templates are **done** — `src/commands/templates.ts`).
+  **Decision (2026-08-07): declined for now** — read-only is the intended purpose;
+  the ToS gray zone + account-termination risk are not worth it for the current
+  use case. Revisit only if needs change (closed sc-akkf).
+- ~~Folders/tags listing~~ **done** — `strong folders` / `strong tags`
+  (`src/commands/folders.ts`, `src/commands/tags.ts`; shapes verified live
+  2026-08). Possible follow-up: `--tag` filter on `workouts`/`stats`/`export`.
 - ~~Local caching~~ JSON cache + continuation-cursor incremental sync is **done**
   (`src/lib/cache.ts`, wired into `workouts`/`stats`/`export`); SQLite would
-  cut cache-file size/IO, and a re-sync-on-delete heuristic (e.g. periodic
-  `--fresh` reminder) would close the deleted-workout gap.
+  cut cache-file size/IO. The deleted-workout gap is now **bounded by an
+  automatic full re-sync** every `STRONG_FULL_SYNC_INTERVAL_DAYS` (default 30)
+  since the last full walk — `--fresh` still forces one immediately.
 - ~~Unit conversions~~ Display conversion is **done** (`src/lib/units.ts`):
   the API stores canonical metric values (weights kg, distances m — verified
   live), the CLI converts to the account's `weightUnit`/`distanceUnit` prefs
@@ -122,22 +130,25 @@ tests/
 Small fixes worth doing when next touching the area (from the pre-standalone
 review; low urgency, none blocks everyday use):
 
-- **P2 — `setEnv()` module-level mutable singleton** (`src/config/config.ts`).
-  Vitest runs test files in parallel and `setEnv` mutates a module-global env.
-  Currently safe (only config tests mutate it, and they reset in `afterEach`),
-  but new CLI-level tests should reset env in `afterEach` too, or switch to
-  per-invocation env plumbing / serial test runs if it bites.
+- ~~**P2 — `setEnv()` module-level mutable singleton**~~ **Done (2026-08-07,
+  sc-2wqs)**: `setEnv` now snapshots its input, `resetEnv()` restores the real
+  `process.env`, and the config tests document + exercise the reset-in-
+  `afterEach` rule. Full per-invocation env plumbing (threading an Env through
+  every command) remains the long-term fix if CLI-level tests ever grow
+  enough env usage to make the singleton painful — not worth the churn today
+  since Vitest isolates each test file anyway.
 - **P3 — JWT claims decoded but never validated.** `decodeJwt` reads
   `exp`/`nameidentifier` without signature verification (by design — token
   comes from our own TLS login) or `exp`-bounds/`iat`/`nbf` sanity checks.
   Accepted threat model for a personal read-only CLI; revisit if the tool is
-  ever shared or fed third-party session files.
-- **P3 — 5xx retry backoff is hardcoded** (250/500 ms, two retries) and 429
-  (soft rate limit) fails through immediately. If soft limits are hit in
-  practice, add an env-tunable backoff and treat 429 as retryable.
-- **P3 — Biome config drift.** `biome.json` pins `$schema 2.3.11` while the
-  installed CLI is 2.5.x; `biome migrate` will clear the warnings.
-- **Cache gap — deleted workouts.** The API does not tombstone deletions, so
-  `--fresh` is the only way to drop deleted workouts from the cache; a
-  periodic `--fresh` reminder or a re-sync-on-delete heuristic would close
-  this.
+  ever shared or fed third-party session files. (open sc-2aab)
+- ~~**P3 — 5xx retry backoff is hardcoded**~~ **Done (2026-08-07, sc-ws3y)**: retry
+  policy is env-tunable (`STRONG_MAX_RETRIES` / `STRONG_RETRY_BACKOFF_MS`,
+  defaults 2 / 250ms), 429 soft rate limits are retried with jittered backoff,
+  and 401-after-refresh behavior is unchanged.
+- ~~**P3 — Biome config drift.**~~ **Done** (biome migrate, sc-jr6z).
+- ~~**Cache gap — deleted workouts.**~~ **Done (2026-08-07, sc-dlu6)**: automatic
+  full re-sync every `STRONG_FULL_SYNC_INTERVAL_DAYS` (default 30) since the
+  last full walk bounds the staleness window; `--fresh` remains the manual
+  escape hatch. Full re-walks rewrite the cache from the source of truth, so
+  there is no data-loss risk for existing caches.
