@@ -72,6 +72,28 @@ export function folderName(folder: Folder): string {
   return nameOrId(folder.id, folder.name)
 }
 
+/** Extract the trailing id from a user-scoped `/api/users/{userId}/{kind}/{id}` href. */
+function idFromHref(href: string): string | null {
+  const parts = href.split('/')
+  return parts[parts.length - 1] || null
+}
+
+/**
+ * Measurement ids belonging to a tag (parsed from its `_links.measurement`
+ * hrefs). The links are user-scoped URLs — the same shape cell-set-groups
+ * use — so these ids compare directly against `Exercise.id`.
+ */
+export function tagMeasurementIds(tag: Tag): string[] {
+  return (tag._links?.measurement ?? [])
+    .map((link) => idFromHref(link.href))
+    .filter((id): id is string => id !== null)
+}
+
+/** True when the workout contains at least one exercise carrying a tagged measurement id. */
+export function workoutHasAnyTaggedExercise(workout: Workout, taggedIds: Set<string>): boolean {
+  return workout.exercises.some((ex) => taggedIds.has(ex.id))
+}
+
 /**
  * Build an id → name lookup from global + user exercise definitions.
  * Global names are overridable by the user's custom names.
@@ -117,8 +139,7 @@ export function parseCellSet(cellSet: CellSet): WorkoutSet | null {
 export function measurementIdFromGroup(group: CellSetGroup): string | null {
   const href = group._links?.measurement?.href
   if (!href) return null
-  const parts = href.split('/')
-  return parts[parts.length - 1] || null
+  return idFromHref(href)
 }
 
 export function transformLog(log: RawLog, measurementMap: Map<string, string>): Workout {

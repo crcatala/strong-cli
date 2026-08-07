@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import type { CellSet, RawLog } from '../../src/api/types.js'
+import type { CellSet, RawLog, Tag, Workout } from '../../src/api/types.js'
 import {
   buildMeasurementMap,
   folderName,
   measurementIdFromGroup,
   parseCellSet,
+  tagMeasurementIds,
   tagName,
   templateName,
   toSummary,
   transformLog,
   transformLogs,
+  workoutHasAnyTaggedExercise,
   workoutVolume,
 } from '../../src/transform/workouts.js'
 import { loadCapturedMeasurements, MEASUREMENT_IDS, syntheticLog } from '../helpers/fixtures.js'
@@ -154,5 +156,67 @@ describe('name helpers (templates/tags/folders)', () => {
       'Example Templates',
     )
     expect(folderName({ id: 'f-1' })).toBe('f-1')
+  })
+})
+
+describe('tagMeasurementIds', () => {
+  it('parses measurement ids from the tag link hrefs', () => {
+    const tag: Tag = {
+      id: 'arms',
+      name: { en: 'ARMS' },
+      _links: {
+        measurement: [
+          { href: '/api/users/u/measurements/aaa' },
+          { href: '/api/users/u/measurements/bbb' },
+        ],
+      },
+    }
+    expect(tagMeasurementIds(tag)).toEqual(['aaa', 'bbb'])
+  })
+
+  it('returns an empty list when there are no measurement links', () => {
+    expect(tagMeasurementIds({ id: 'empty', name: { en: 'EMPTY' } })).toEqual([])
+  })
+
+  it('drops empty trailing segments (href ending in a slash)', () => {
+    const tag: Tag = {
+      id: 'odd',
+      _links: { measurement: [{ href: '/api/users/u/measurements/aaa' }, { href: '/x/' }] },
+    }
+    expect(tagMeasurementIds(tag)).toEqual(['aaa'])
+  })
+})
+
+describe('workoutHasAnyTaggedExercise', () => {
+  function taggedWorkout(): Workout {
+    return transformLog(
+      syntheticLog(),
+      new Map([[MEASUREMENT_IDS.squatMachine, 'Squat (Machine)']]),
+    )
+  }
+
+  it('is true when any exercise id is in the tagged set', () => {
+    const w = taggedWorkout()
+    expect(workoutHasAnyTaggedExercise(w, new Set([MEASUREMENT_IDS.squatMachine]))).toBe(true)
+  })
+
+  it('is false when no exercise id is in the tagged set', () => {
+    const w = taggedWorkout()
+    expect(workoutHasAnyTaggedExercise(w, new Set(['not-in-workout']))).toBe(false)
+  })
+
+  it('is false for an empty set and for workouts without exercises', () => {
+    const w = taggedWorkout()
+    expect(workoutHasAnyTaggedExercise(w, new Set())).toBe(false)
+    const empty: Workout = {
+      id: 'w0',
+      name: null,
+      startDate: null,
+      endDate: null,
+      timezoneId: null,
+      logType: 'WORKOUT',
+      exercises: [],
+    }
+    expect(workoutHasAnyTaggedExercise(empty, new Set(['anything']))).toBe(false)
   })
 })

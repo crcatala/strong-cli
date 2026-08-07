@@ -87,14 +87,14 @@ tests/
 | `strong auth status` / `whoami` | Show auth state + token expiry |
 | `strong auth refresh` | Force token refresh |
 | `strong auth logout` | Clear stored session |
-| `strong workouts [--limit --since --unit]` | List workout summaries (paginated) |
+| `strong workouts [--limit --since --tag --unit]` | List workout summaries (paginated) |
 | `strong workout <id> [--unit]` | Full workout detail (sets/weights/RPE) |
 | `strong exercises [--search --user]` | Browse the global exercise library (public!) |
 | `strong templates [--search --limit]` | List routine templates (requires auth) |
 | `strong folders [--search --limit]` | List template folders (requires auth) |
 | `strong tags [--search --limit]` | List exercise tags (requires auth) |
-| `strong stats [--weeks --unit]` | Volume/sets/weekly aggregation |
-| `strong export [-o file]` | JSON export of workouts + exercises |
+| `strong stats [--weeks --tag --unit]` | Volume/sets/weekly aggregation |
+| `strong export [-o file] [--tag]` | JSON export of workouts + exercises |
 
 ## Known risks
 
@@ -112,7 +112,13 @@ tests/
   use case. Revisit only if needs change (closed sc-akkf).
 - ~~Folders/tags listing~~ **done** — `strong folders` / `strong tags`
   (`src/commands/folders.ts`, `src/commands/tags.ts`; shapes verified live
-  2026-08). Possible follow-up: `--tag` filter on `workouts`/`stats`/`export`.
+  2026-08). ~~Possible follow-up: `--tag` filter on `workouts`/`stats`/`export`~~
+  **done (2026-08-07)** — `--tag <name>` on `workouts`/`stats`/`export` filters
+  to workouts containing at least one tagged exercise (case-insensitive match
+  on tag name or id; verified live: tags ship complete `_links.measurement`
+  lists, same user-scoped href shape as workout cell-set-groups, so ids match
+  directly). `export --tag` records `filter.tag` in the export doc. Closed
+  sc-n9n7.
 - ~~Local caching~~ JSON cache + continuation-cursor incremental sync is **done**
   (`src/lib/cache.ts`, wired into `workouts`/`stats`/`export`); SQLite would
   cut cache-file size/IO. The deleted-workout gap is now **bounded by an
@@ -140,8 +146,9 @@ review; low urgency, none blocks everyday use):
 - **P3 — JWT claims decoded but never validated.** `decodeJwt` reads
   `exp`/`nameidentifier` without signature verification (by design — token
   comes from our own TLS login) or `exp`-bounds/`iat`/`nbf` sanity checks.
-  Accepted threat model for a personal read-only CLI; revisit if the tool is
-  ever shared or fed third-party session files. (open sc-2aab)
+  Accepted threat model for a personal read-only CLI; **decision documented
+  2026-08-07** in `src/api/jwt.ts` + closed sc-2aab. Revisit if the tool is
+  ever shared or fed third-party session files.
 - ~~**P3 — 5xx retry backoff is hardcoded**~~ **Done (2026-08-07, sc-ws3y)**: retry
   policy is env-tunable (`STRONG_MAX_RETRIES` / `STRONG_RETRY_BACKOFF_MS`,
   defaults 2 / 250ms), 429 soft rate limits are retried with jittered backoff,

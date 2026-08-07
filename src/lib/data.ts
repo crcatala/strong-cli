@@ -11,9 +11,14 @@
 
 import type { LogsWalk, StrongClient } from '../api/client.js'
 import type { Measurement, RawLog, Workout } from '../api/types.js'
-import { ApiError, AuthError } from '../cli/errors.js'
+import { ApiError, AuthError, UsageError } from '../cli/errors.js'
 import { getEnv } from '../config/config.js'
-import { buildMeasurementMap, transformLogs } from '../transform/workouts.js'
+import {
+  buildMeasurementMap,
+  tagMeasurementIds,
+  tagName,
+  transformLogs,
+} from '../transform/workouts.js'
 import {
   CACHE_VERSION,
   fullResyncDue,
@@ -99,6 +104,49 @@ export async function loadWorkoutData(
       fullResync,
     },
   }
+}
+
+/**
+ * Resolve a `--tag <query>` flag to the set of measurement (exercise) ids it
+ * covers, so callers can filter workouts/stats/exports to exercises carrying
+ * that tag. Matching is case-insensitive against the tag's display name or
+ * its slug id (e.g. `arms` / `ARMS`). Tags are fetched from the user doc
+ * (`include=tag`) — a small, single-page collection (verified live: 10 tags).
+ *
+ * Throws a UsageError when the query matches nothing (listing available tag
+ * names) or matches more than one tag (listing the ambiguous matches).
+ */
+export async function resolveTaggedMeasurementIds(
+  client: StrongClient,
+  userId: string,
+  query: string,
+): Promise<Set<string>> {
+  const tags = await client.getTags(userId)
+  const q = query.toLowerCase()
+  const matches = tags.filter((t) => {
+    const name = tagName(t).toLowerCase()
+    return name === q || (typeof t.id === 'string' && t.id.toLowerCase() === q)
+  })
+
+  if (matches.length === 0) {
+    const available = tags
+      .map((t) => tagName(t))
+      .slice(0, 20)
+      .join(', ')
+    throw new UsageError(
+      `Unknown tag: ${query}. Run \`strong tags\` to list tags${available ? ` (available: ${available})` : ''}`,
+    )
+  }
+  if (matches.length > 1) {
+    const listed = matches.map((t) => tagName(t)).join(', ')
+    throw new UsageError(`Tag "${query}" is ambiguous, matches: ${listed}`)
+  }
+
+  const ids = tagMeasurementIds(matches[0])
+  if (ids.length === 0) {
+    throw new UsageError(`Tag "${query}" has no linked exercises`)
+  }
+  return new Set(ids)
 }
 
 /**

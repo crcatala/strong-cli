@@ -6,8 +6,9 @@ import { StrongClient } from '../../src/api/client.js'
 import type { TokenState, TokenStore } from '../../src/api/token-manager.js'
 import type { RawLog } from '../../src/api/types.js'
 import { CACHE_VERSION, loadCache, saveCache, type WorkoutCache } from '../../src/lib/cache.js'
-import { loadWorkoutData } from '../../src/lib/data.js'
+import { loadWorkoutData, resolveTaggedMeasurementIds } from '../../src/lib/data.js'
 import {
+  createFetchMock,
   futureJwt,
   MEASUREMENT_IDS,
   mockResponse,
@@ -308,5 +309,76 @@ describe('loadWorkoutData with the incremental cache', () => {
       .filter((u) => u.includes('include=log'))
     expect(new URL(logCalls[0] ?? '').searchParams.get('continuation')).toBe('')
     expect(loadCache('user-1', cachePath)?.lastFullSyncAt).toBeTruthy()
+  })
+})
+
+describe('resolveTaggedMeasurementIds', () => {
+  function tagsClient(tags: unknown[]) {
+    return makeClient(
+      createFetchMock([
+        {
+          match: (url) => url.includes('include=tag'),
+          handler: () => mockResponse({ id: 'user-1', _embedded: { tag: tags } }),
+        },
+      ]),
+    )
+  }
+
+  const TAG = {
+    id: 'arms',
+    name: { en: 'ARMS' },
+    _links: {
+      measurement: [
+        { href: '/api/users/user-1/measurements/aaa' },
+        { href: '/api/users/user-1/measurements/bbb' },
+      ],
+    },
+  }
+
+  it('resolves a tag by display name (case-insensitive) to its measurement ids', async () => {
+    const client = tagsClient([TAG])
+    const ids = await resolveTaggedMeasurementIds(client, 'user-1', 'arms')
+    expect([...ids].sort()).toEqual(['aaa', 'bbb'])
+
+    const upper = await resolveTaggedMeasurementIds(client, 'user-1', 'ARMS')
+    expect([...upper].sort()).toEqual(['aaa', 'bbb'])
+  })
+
+  it('matches the slug id even when it differs from the display name', async () => {
+    const client = tagsClient([
+      {
+        id: 'my-tag',
+        name: { en: 'MY TAG' },
+        _links: { measurement: [{ href: '/api/users/user-1/measurements/ccc' }] },
+      },
+    ])
+    const byName = await resolveTaggedMeasurementIds(client, 'user-1', 'MY TAG')
+    expect([...byName]).toEqual(['ccc'])
+    const bySlug = await resolveTaggedMeasurementIds(client, 'user-1', 'my-tag')
+    expect([...bySlug]).toEqual(['ccc'])
+  })
+
+  it('throws a usage error listing available tags when nothing matches', async () => {
+    const client = tagsClient([TAG])
+    await expect(resolveTaggedMeasurementIds(client, 'user-1', 'nope')).rejects.toThrow(
+      /Unknown tag: nope.*available: ARMS/s,
+    )
+  })
+
+  it('throws a usage error on ambiguous matches', async () => {
+    const client = tagsClient([
+      TAG,
+      { id: 'arms-custom', name: { en: 'ARMS' } }, // same display name
+    ])
+    await expect(resolveTaggedMeasurementIds(client, 'user-1', 'arms')).rejects.toThrow(
+      /ambiguous.*ARMS, ARMS/s,
+    )
+  })
+
+  it('throws a usage error when the matched tag has no linked exercises', async () => {
+    const client = tagsClient([{ id: 'empty', name: { en: 'EMPTY' } }])
+    await expect(resolveTaggedMeasurementIds(client, 'user-1', 'empty')).rejects.toThrow(
+      /has no linked exercises/,
+    )
   })
 })
