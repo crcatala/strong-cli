@@ -1,6 +1,6 @@
 ---
 id: sc-jr6z
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-08-06T21:04:34Z
@@ -21,3 +21,9 @@ Run npx biome migrate in the repo root (safe, updates  and any deprecated config
 
 biome.json schema matches the installed CLI version. npx biome check . passes with zero warnings. No unrelated formatting churn in the committed diff.
 
+
+## Notes
+
+**2026-08-07T04:41:58Z**
+
+Done: biome migrate --write (schema 2.5.7, linter.rules.preset). biome check . clean, 0 infos.
