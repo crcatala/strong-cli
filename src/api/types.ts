@@ -140,6 +140,29 @@ export interface Template {
   [k: string]: unknown
 }
 
+/** Exercise tag (from the user doc `include=tag`). Verified live 2026-08. */
+export interface Tag {
+  id: string
+  name?: LocalizedName | string | null
+  color?: string
+  isGlobal?: boolean
+  created?: string
+  _links?: HalLinks & { measurement?: Link[] }
+  [k: string]: unknown
+}
+
+/** Template folder (from the user doc `include=folder`). Verified live 2026-08. */
+export interface Folder {
+  id: string
+  name?: LocalizedName | string | null
+  isGlobal?: boolean
+  index?: number
+  created?: string
+  lastChanged?: string
+  _links?: HalLinks & { template?: Link[] }
+  [k: string]: unknown
+}
+
 export interface UserResponse {
   id: string
   _links?: HalLinks & { next?: Link }
@@ -147,8 +170,8 @@ export interface UserResponse {
     log?: RawLog[]
     measurement?: Measurement[]
     template?: Template[]
-    tag?: unknown[]
-    folder?: unknown[]
+    tag?: Tag[]
+    folder?: Folder[]
     widget?: unknown[]
     measuredValue?: unknown[]
     [k: string]: unknown

@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import type { CellSet, RawLog } from '../../src/api/types.js'
 import {
   buildMeasurementMap,
+  folderName,
   measurementIdFromGroup,
   parseCellSet,
+  tagName,
+  templateName,
   toSummary,
   transformLog,
   transformLogs,
@@ -132,5 +135,24 @@ describe('toSummary', () => {
     expect(summary.completedSets).toBe(4)
     expect(summary.skippedSets).toBe(1)
     expect(summary.volume).toBe(60 * 12 + 70 * 10 + 20 * 12 + 22.5 * 10)
+  })
+})
+
+describe('name helpers (templates/tags/folders)', () => {
+  it('templateName prefers custom, then en, then the id', () => {
+    const t = { id: 'tpl-1' }
+    expect(templateName({ ...t, name: { custom: 'My Push' } })).toBe('My Push')
+    expect(templateName({ ...t, name: { en: 'Push Day' } })).toBe('Push Day')
+    expect(templateName({ ...t, name: 'Plain Name' })).toBe('Plain Name')
+    expect(templateName(t)).toBe('tpl-1')
+  })
+
+  it('tagName and folderName follow the same fallback', () => {
+    expect(tagName({ id: 'arms', name: { en: 'ARMS' } })).toBe('ARMS')
+    expect(tagName({ id: 'arms', name: null })).toBe('arms')
+    expect(folderName({ id: 'example-templates', name: { en: 'Example Templates' } })).toBe(
+      'Example Templates',
+    )
+    expect(folderName({ id: 'f-1' })).toBe('f-1')
   })
 })

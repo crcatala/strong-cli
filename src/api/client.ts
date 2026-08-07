@@ -13,11 +13,13 @@ import {
 } from './endpoints.js'
 import { TokenManager, type TokenState, type TokenStore } from './token-manager.js'
 import type {
+  Folder,
   LoginRequest,
   LoginResponse,
   MeasurementsResponse,
   RawLog,
   RefreshRequest,
+  Tag,
   Template,
   UserResponse,
 } from './types.js'
@@ -30,6 +32,8 @@ export interface StrongClientOptions {
   fetch?: typeof fetch
   headers?: ClientHeaders
   now?: () => number
+  /** Override the retry policy (defaults to {@link DEFAULT_RETRY_POLICY}). */
+  retry?: Partial<RetryPolicy>
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -48,6 +52,27 @@ export const DEFAULT_MAX_PAGES = 10_000
  * take a small breath between requests.
  */
 export const DEFAULT_PAGE_DELAY_MS = 150
+
+/**
+ * Retry policy for transient failures (5xx, 429 rate limits) on authed
+ * requests. Env-tunable via STRONG_MAX_RETRIES / STRONG_RETRY_BACKOFF_MS
+ * (see `factory.ts`). Delays are `baseDelayMs × attempt`, jittered ±25% to
+ * avoid synchronized retry storms.
+ */
+export interface RetryPolicy {
+  /** Max retries per request for retryable statuses (5xx, 429). */
+  maxRetries: number
+  /** Base backoff in ms (per-attempt delay = base × attempt, jittered). */
+  baseDelayMs: number
+  /** Whether 429 (soft rate limit) is retried with backoff. */
+  retryRateLimited: boolean
+}
+
+export const DEFAULT_RETRY_POLICY: RetryPolicy = {
+  maxRetries: 2,
+  baseDelayMs: 250,
+  retryRateLimited: true,
+}
 
 export interface PaginationOptions {
   /** Override the per-walk page cap (default {@link DEFAULT_MAX_PAGES}). */
@@ -76,7 +101,8 @@ export interface LogsWalk {
  * HTTP client for the undocumented Strong backend (https://back.strong.app).
  *
  * Handles: auth (login + token refresh via TokenManager), HAL response
- * unwrapping, 401-retry-once-after-refresh, and 5xx backoff.
+ * unwrapping, 401-retry-once-after-refresh, and retryable-status backoff
+ * (5xx + 429 rate limits; see {@link RetryPolicy}).
  *
  * API knowledge triangulated from:
  * - tolik518/strong-api-workout-sync   (Rust, fixtures captured 2026-03)
@@ -199,13 +225,15 @@ export class StrongClient {
   }
 
   /**
-   * Authed request with 401-retry-once-after-refresh and 5xx backoff.
+   * Authed request with 401-retry-once-after-refresh and retryable-status
+   * backoff (5xx + 429 rate limits; see {@link RetryPolicy}).
    */
   private async authedRequest<T>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     url: string,
     body?: unknown,
   ): Promise<T> {
+    const retry = { ...DEFAULT_RETRY_POLICY, ...this.opts.retry }
     let refreshed = false
     let attempt = 0
     for (;;) {
@@ -219,9 +247,13 @@ export class StrongClient {
           await this.tokenManager.forceRefresh()
           continue
         }
-        if (status !== undefined && status >= 500 && attempt < 2) {
+        const retryable =
+          (status !== undefined && status >= 500) || (status === 429 && retry.retryRateLimited)
+        if (retryable && attempt < retry.maxRetries) {
           attempt++
-          await sleep(250 * attempt)
+          // Jittered backoff (±25%) — a deterministic sleep would let
+          // concurrent requests re-collide on the rate limiter.
+          await sleep(retry.baseDelayMs * attempt * (0.75 + Math.random() * 0.5))
           continue
         }
         throw err
@@ -379,6 +411,25 @@ export class StrongClient {
       userTemplatesUrl(this.baseUrl, userId),
     )
     return data._embedded?.template ?? []
+  }
+
+  /**
+   * Exercise tags from the user doc (`include=tag`). Shape verified live:
+   * `{ id, name: {en}, color, isGlobal, _links.measurement[] }`. Small
+   * collection — a single page covers typical accounts.
+   */
+  async getTags(userId: string): Promise<Tag[]> {
+    const data = await this.getUser(userId, { includes: ['tag'] })
+    return data._embedded?.tag ?? []
+  }
+
+  /**
+   * Template folders from the user doc (`include=folder`). Shape verified
+   * live: `{ id, name: {en}, index, isGlobal, _links.template[] }`.
+   */
+  async getFolders(userId: string): Promise<Folder[]> {
+    const data = await this.getUser(userId, { includes: ['folder'] })
+    return data._embedded?.folder ?? []
   }
 
   /** Raw logs collection endpoint (no include filtering). */

@@ -1,6 +1,6 @@
 ---
 id: sc-ws3y
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-08-06T21:04:34Z
@@ -20,4 +20,10 @@ Make backoff env-tunable: e.g. STRONG_RETRY_BACKOFF_MS / STRONG_MAX_RETRIES with
 ## Acceptance Criteria
 
 New env vars (or documented equivalents) for backoff/retry counts with current values as defaults. 429 retries with backoff; 5xx schedule unchanged or improved. Unit tests cover: retry-then-success, retry-exhaustion, and 429-with-soft-limit-body. Existing 78 tests pass.
+
+## Notes
+
+**2026-08-07T12:00:00Z**
+
+Shipped in PR (chore/polish-cache-retry-folders-config). `RetryPolicy` on `StrongClientOptions` (defaults `maxRetries: 2`, `baseDelayMs: 250`, `retryRateLimited: true`); `authedRequest` retries 5xx and 429 with **jittered** backoff (`base × attempt × 0.75–1.25`) — jitter avoids synchronized re-collisions on the rate limiter. Env-tunable via `STRONG_MAX_RETRIES` / `STRONG_RETRY_BACKOFF_MS` (wired in factory.ts; invalid values ignored). 401-after-refresh behavior unchanged (refresh once, then terminal — the soft-limit 401 variant is intentionally left as-is per ticket design). README env table + `strong --help` env section updated. Tests: retry-then-success (5xx, 429), exhaustion (429, custom maxRetries), `retryRateLimited: false` passthrough. Closed.
 

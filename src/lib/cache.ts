@@ -17,8 +17,11 @@
  *
  * Limits: deleted workouts are not tombstoned by the API, so the cache can
  * hold a workout the user removed until a full re-sync (`strong … --fresh`,
- * which bypasses the cache and rewrites it). Corrupt or mismatched-user
- * caches are ignored (treated as a cache miss → full walk).
+ * which bypasses the cache and rewrites it). To bound that staleness window,
+ * a full re-walk is also triggered automatically when the cache has no
+ * `lastFullSyncAt` (pre-upgrade) or the configured interval has elapsed —
+ * see `fullResyncDue()` and `STRONG_FULL_SYNC_INTERVAL_DAYS`. Corrupt or
+ * mismatched-user caches are ignored (treated as a cache miss → full walk).
  */
 
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
@@ -34,6 +37,8 @@ export interface WorkoutCache {
   userId: string
   /** ISO timestamp of the last sync that changed the cache. */
   syncedAt: string
+  /** ISO timestamp of the last full re-walk (''/missing = never yet). */
+  lastFullSyncAt?: string
   /** Continuation token to resume the next incremental walk from ('' = first page). */
   continuation: string
   /** True when the last sync reached the end of the stream. */
@@ -97,4 +102,36 @@ export function mergeLogs(existing: RawLog[], fresh: RawLog[]): RawLog[] {
     }
   }
   return dirty ? [...byId.values()] : existing
+}
+
+/** Default interval (days) between automatic full re-syncs. */
+export const DEFAULT_FULL_SYNC_INTERVAL_DAYS = 30
+
+/**
+ * Parse a `STRONG_FULL_SYNC_INTERVAL_DAYS`-style value; anything invalid
+ * (unset, NaN, ≤ 0) falls back to {@link DEFAULT_FULL_SYNC_INTERVAL_DAYS}.
+ */
+export function parseFullSyncIntervalDays(value: string | undefined): number {
+  if (!value) return DEFAULT_FULL_SYNC_INTERVAL_DAYS
+  const n = Number(value)
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_FULL_SYNC_INTERVAL_DAYS
+  return Math.floor(n)
+}
+
+/**
+ * True when the cache should be refreshed with a full re-walk: no full sync
+ * has ever been recorded (pre-upgrade cache) or the interval since the last
+ * one has elapsed. The API does not tombstone deletions, so periodic full
+ * re-walks are the only way to drop deleted workouts from the cache — this
+ * bounds how stale the cache can get without bothering the user.
+ */
+export function fullResyncDue(
+  cache: Pick<WorkoutCache, 'lastFullSyncAt'>,
+  nowMs: number,
+  intervalDays: number,
+): boolean {
+  if (!cache.lastFullSyncAt) return true
+  const last = Date.parse(cache.lastFullSyncAt)
+  if (Number.isNaN(last)) return true
+  return nowMs - last >= intervalDays * 86_400_000
 }

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StrongClient } from '../../src/api/client.js'
 import type { TokenState, TokenStore } from '../../src/api/token-manager.js'
 import type { RawLog } from '../../src/api/types.js'
-import { loadCache } from '../../src/lib/cache.js'
+import { CACHE_VERSION, loadCache, saveCache, type WorkoutCache } from '../../src/lib/cache.js'
 import { loadWorkoutData } from '../../src/lib/data.js'
 import {
   futureJwt,
@@ -240,5 +240,73 @@ describe('loadWorkoutData with the incremental cache', () => {
       'log-2',
       'log-3',
     ])
+  })
+
+  it('records lastFullSyncAt on a full walk and preserves it across incremental syncs', async () => {
+    const cachePath = join(tmp, 'cache.json')
+    const fetchImpl = standardMock()
+    const client = makeClient(fetchImpl)
+    await loadWorkoutData(client, { cachePath })
+    const afterFullWalk = loadCache('user-1', cachePath)
+    expect(afterFullWalk?.lastFullSyncAt).toBeTruthy()
+
+    fetchImpl.mockImplementation(standardMock({ grownTail: true }))
+    await loadWorkoutData(client, { cachePath })
+    const afterIncremental = loadCache('user-1', cachePath)
+    expect(afterIncremental?.lastFullSyncAt).toBe(afterFullWalk?.lastFullSyncAt)
+  })
+
+  it('auto-heals with a full re-walk when the full-sync interval has elapsed', async () => {
+    const cachePath = join(tmp, 'cache.json')
+    const fetchImpl = standardMock()
+    const client = makeClient(fetchImpl)
+    const DAY = 86_400_000
+    const old = new Date(Date.now() - 40 * DAY).toISOString()
+    const seeded: WorkoutCache = {
+      version: CACHE_VERSION,
+      userId: 'user-1',
+      syncedAt: old,
+      lastFullSyncAt: old,
+      continuation: 'TOKEN2',
+      finalized: true,
+      logs: PAGE1(),
+    }
+    saveCache(seeded, cachePath)
+
+    const data = await loadWorkoutData(client, { cachePath, fullSyncIntervalDays: 30 })
+    expect(data.cache.fromCache).toBe(false)
+    expect(data.cache.fullResync).toBe('interval')
+    // The stored resume cursor was ignored — the walk restarted from page 1.
+    const logCalls = fetchImpl.mock.calls
+      .map(([input]) => String(input))
+      .filter((u) => u.includes('include=log'))
+    expect(new URL(logCalls[0] ?? '').searchParams.get('continuation')).toBe('')
+    // The auto-heal clock is reset by the full re-walk.
+    const after = loadCache('user-1', cachePath)
+    expect(after?.lastFullSyncAt).toBeTruthy()
+    expect(Date.parse(after?.lastFullSyncAt ?? '')).toBeGreaterThan(Date.parse(old))
+  })
+
+  it('auto-heals once when upgrading a pre-auto-heal cache (no lastFullSyncAt)', async () => {
+    const cachePath = join(tmp, 'cache.json')
+    const fetchImpl = standardMock()
+    const client = makeClient(fetchImpl)
+    const seeded: WorkoutCache = {
+      version: CACHE_VERSION,
+      userId: 'user-1',
+      syncedAt: new Date().toISOString(),
+      continuation: 'TOKEN2',
+      finalized: true,
+      logs: PAGE1(),
+    }
+    saveCache(seeded, cachePath)
+
+    const data = await loadWorkoutData(client, { cachePath })
+    expect(data.cache.fullResync).toBe('interval')
+    const logCalls = fetchImpl.mock.calls
+      .map(([input]) => String(input))
+      .filter((u) => u.includes('include=log'))
+    expect(new URL(logCalls[0] ?? '').searchParams.get('continuation')).toBe('')
+    expect(loadCache('user-1', cachePath)?.lastFullSyncAt).toBeTruthy()
   })
 })

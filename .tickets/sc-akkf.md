@@ -1,6 +1,6 @@
 ---
 id: sc-akkf
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-08-06T21:04:54Z
@@ -20,4 +20,10 @@ Reference: jerhinesmith/strong-mcp (MIT — patterns can be adapted; note its li
 ## Acceptance Criteria
 
 A written decision from the maintainer on scope/risk appetite is recorded (ticket note). If approved: write path implemented behind an explicit flag, tested only against a disposable account, defaults remain read-only, docs updated with risk warnings. If declined: ticket closed with the decision documented.
+
+## Notes
+
+**2026-08-07T11:35:00Z**
+
+Maintainer decision: **no write support at this time.** Read-only is the intended purpose of this tool; the ToS gray zone and account-risk are not worth it for the current use case. Write API exploration (envelope-PUT sync per docs/api-inventory.md) remains PLAN.md future work and may be revisited if needs change. Closing with the decision documented (acceptance branch: declined).
 

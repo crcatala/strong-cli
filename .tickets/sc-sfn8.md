@@ -1,6 +1,6 @@
 ---
 id: sc-sfn8
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-08-07T04:41:58Z
@@ -20,4 +20,10 @@ Follow the strong templates pattern (src/commands/templates.ts): auth via client
 ## Acceptance Criteria
 
 Folder and/or tag commands wired to confirmed live API shapes. Types, name helpers, and tests added. Docs updated. Existing tests pass.
+
+## Notes
+
+**2026-08-07T12:00:00Z**
+
+Shipped in PR (chore/polish-cache-retry-folders-config) — Phase 1 minimal lists (maintainer-approved UX: id + name, json/plain/table, --search/--limit mirroring `strong templates`). **Live shapes verified against the real account (2026-08-07)**: `include=tag` → `{id, name:{en}, color, isGlobal, created, _links.measurement[]}` (10 tags); `include=folder` → `{id, name:{en}, index, isGlobal, created, lastChanged, _links.template[]}` (3 folders). Types `Tag`/`Folder` added (UserResponse._embedded now typed), `StrongClient.getTags/getFolders`, `tagName`/`folderName` helpers (shared `nameOrId` with templateName), `strong tags` / `strong folders` commands, registered in program.ts, README + PLAN.md updated. Counts/memberships deliberately not shown (inert without filtering); possible follow-up: `--tag` filter on workouts/stats/export if the log↔tag mapping proves useful. Closed.
 

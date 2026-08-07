@@ -13,9 +13,11 @@ import type {
   CellSet,
   CellSetGroup,
   Exercise,
+  Folder,
   LocalizedName,
   Measurement,
   RawLog,
+  Tag,
   Template,
   Workout,
   Set as WorkoutSet,
@@ -52,11 +54,22 @@ export function measurementName(measurement: Measurement): string {
   return name.custom ?? name.en ?? measurement.id
 }
 
-export function templateName(template: Template): string {
-  const name = template.name
-  if (!name) return template.id
+function nameOrId(id: string, name: LocalizedName | string | null | undefined): string {
+  if (!name) return id
   if (typeof name === 'string') return name
-  return name.custom ?? name.en ?? template.id
+  return name.custom ?? name.en ?? id
+}
+
+export function templateName(template: Template): string {
+  return nameOrId(template.id, template.name)
+}
+
+export function tagName(tag: Tag): string {
+  return nameOrId(tag.id, tag.name)
+}
+
+export function folderName(folder: Folder): string {
+  return nameOrId(folder.id, folder.name)
 }
 
 /**

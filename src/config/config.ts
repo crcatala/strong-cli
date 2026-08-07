@@ -13,6 +13,12 @@
  * Config dir follows OS conventions:
  *   $XDG_CONFIG_HOME/strong-cli (Linux) · ~/Library/Application Support/
  *   strong-cli (macOS) · %LOCALAPPDATA%/strong-cli (Windows)
+ *
+ * Env injection contract: config reads env through a module-global snapshot
+ * (`setEnv`, used by run.ts at bootstrap and by tests). That state is
+ * process-global, so any test calling `setEnv` MUST restore it in
+ * `afterEach` — use `resetEnv()` (or setEnv back) to avoid leaking a fake
+ * environment into sibling tests. See config.test.ts for the pattern.
  */
 import { chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { homedir, platform } from 'node:os'
@@ -23,11 +29,22 @@ const SERVICE_NAME = 'strong-cli'
 const ACCOUNT_NAME = 'session'
 const SESSION_FILENAME = 'session.json'
 
-let _env: Record<string, string | undefined> = process.env
+let _env: Record<string, string | undefined> = { ...process.env }
 
-/** Override the environment used by config (tests + run.ts injection). */
+/**
+ * Override the environment used by config (tests + run.ts injection).
+ * Takes a snapshot — later mutations of the passed object do not leak in.
+ */
 export function setEnv(env: Record<string, string | undefined>): void {
-  _env = env
+  _env = { ...env }
+}
+
+/**
+ * Restore the real process environment. Tests that call `setEnv` must reset
+ * here in `afterEach` — the snapshot is module-global (see the docstring).
+ */
+export function resetEnv(): void {
+  _env = { ...process.env }
 }
 
 /** Current injected environment. */

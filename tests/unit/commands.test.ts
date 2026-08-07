@@ -341,3 +341,100 @@ describe('templates command', () => {
     await expect(h.run(['templates', '--plain'])).rejects.toThrow(/Not authenticated/)
   })
 })
+
+describe('tags command', () => {
+  function tagsFetch() {
+    return createFetchMock([
+      {
+        match: (url) => url.includes('include=tag'),
+        handler: () =>
+          mockResponse({
+            id: 'user-1',
+            _embedded: {
+              tag: [
+                { id: 'arms', name: { en: 'ARMS' } },
+                { id: 'push', name: { en: 'PUSH' } },
+              ],
+            },
+          }),
+      },
+    ])
+  }
+
+  it('lists tag names in plain output', async () => {
+    const h = harness(tokenEnv(tmp))
+    await h.run(['tags', '--plain'], tagsFetch())
+
+    const out = h.out.join('')
+    expect(out).toContain('ARMS')
+    expect(out).toContain('PUSH')
+  })
+
+  it('filters by --search and lists ids in json output', async () => {
+    const h = harness(tokenEnv(tmp))
+    await h.run(['tags', '--search', 'push', '--json'], tagsFetch())
+
+    const out = h.out.join('')
+    expect(out).toContain('"id": "push"')
+    expect(out).toContain('"name": "PUSH"')
+    expect(out).not.toContain('ARMS')
+  })
+
+  it('respects --limit and rejects 0', async () => {
+    const h = harness(tokenEnv(tmp))
+    await h.run(['tags', '--plain', '--limit', '1'], tagsFetch())
+    expect(h.out.join('')).toContain('ARMS')
+    expect(h.out.join('')).not.toContain('PUSH')
+
+    const h2 = harness(tokenEnv(tmp))
+    await expect(h2.run(['tags', '--limit', '0'], tagsFetch())).rejects.toThrow(/Invalid --limit/)
+  })
+
+  it('requires authentication', async () => {
+    const h = harness({ XDG_CONFIG_HOME: tmp })
+    await expect(h.run(['tags', '--plain'])).rejects.toThrow(/Not authenticated/)
+  })
+})
+
+describe('folders command', () => {
+  function foldersFetch() {
+    return createFetchMock([
+      {
+        match: (url) => url.includes('include=folder'),
+        handler: () =>
+          mockResponse({
+            id: 'user-1',
+            _embedded: {
+              folder: [
+                { id: 'example-templates', name: { en: 'Example Templates' } },
+                { id: 'my-plan', name: { en: 'My Plan' } },
+              ],
+            },
+          }),
+      },
+    ])
+  }
+
+  it('lists folder names in plain output', async () => {
+    const h = harness(tokenEnv(tmp))
+    await h.run(['folders', '--plain'], foldersFetch())
+
+    const out = h.out.join('')
+    expect(out).toContain('Example Templates')
+    expect(out).toContain('My Plan')
+  })
+
+  it('filters by --search and lists ids in json output', async () => {
+    const h = harness(tokenEnv(tmp))
+    await h.run(['folders', '--search', 'plan', '--json'], foldersFetch())
+
+    const out = h.out.join('')
+    expect(out).toContain('"id": "my-plan"')
+    expect(out).not.toContain('Example Templates')
+  })
+
+  it('requires authentication', async () => {
+    const h = harness({ XDG_CONFIG_HOME: tmp })
+    await expect(h.run(['folders', '--plain'])).rejects.toThrow(/Not authenticated/)
+  })
+})
