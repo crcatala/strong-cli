@@ -39,7 +39,7 @@ Examples:
       const filter: { tag?: string } = {}
       if (options.tag) {
         logVerbose(ctx, `Filtering by tag: ${options.tag}`)
-        const taggedIds = await resolveTaggedMeasurementIds(client, data.userId, options.tag)
+        const taggedIds = resolveTaggedMeasurementIds(data.tags, options.tag)
         workouts = workouts.filter((w) => workoutHasAnyTaggedExercise(w, taggedIds))
         filter.tag = options.tag
       }

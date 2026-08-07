@@ -448,18 +448,12 @@ describe('--tag filter on workouts/stats/export', () => {
       },
       {
         match: (url) => url.includes('include=measurement'),
-        handler: () => mockResponse(syntheticUserResponse([])),
-      },
-      {
-        match: (url) => url.includes('include=log'),
-        handler: () => mockResponse(syntheticUserResponse([syntheticLog()])),
-      },
-      {
-        match: (url) => url.includes('include=tag'),
-        handler: () =>
-          mockResponse({
-            id: 'user-1',
+        handler: () => {
+          const base = syntheticUserResponse([])
+          return mockResponse({
+            ...base,
             _embedded: {
+              ...base._embedded,
               tag: [
                 {
                   id: 'push',
@@ -472,7 +466,12 @@ describe('--tag filter on workouts/stats/export', () => {
                 },
               ],
             },
-          }),
+          })
+        },
+      },
+      {
+        match: (url) => url.includes('include=log'),
+        handler: () => mockResponse(syntheticUserResponse([syntheticLog()])),
       },
     ])
   }
@@ -527,5 +526,63 @@ describe('--tag filter on workouts/stats/export', () => {
     const doc2 = JSON.parse(h2.out.join(''))
     expect(doc2.workouts).toHaveLength(0)
     expect(doc2.totals.workouts).toBe(0)
+  })
+
+  it('stats --weeks --tag composes both filters', async () => {
+    const recentDate = new Date(Date.now() - 2 * 86400000).toISOString()
+    const oldDate = new Date(Date.now() - 30 * 86400000).toISOString()
+    const mock = createFetchMock([
+      {
+        match: (url) => url.includes('/api/measurements'),
+        handler: () => mockResponse({ _embedded: { measurement: globalMeasurements } }),
+      },
+      {
+        match: (url) => url.includes('include=measurement'),
+        handler: () => {
+          const base = syntheticUserResponse([])
+          return mockResponse({
+            ...base,
+            _embedded: {
+              ...base._embedded,
+              tag: [
+                {
+                  id: 'push',
+                  name: { en: 'PUSH' },
+                  _links: {
+                    measurement: [
+                      { href: `/api/users/user-1/measurements/${MEASUREMENT_IDS.squatMachine}` },
+                    ],
+                  },
+                },
+              ],
+            },
+          })
+        },
+      },
+      {
+        match: (url) => url.includes('include=log'),
+        handler: () =>
+          mockResponse(
+            syntheticUserResponse([
+              syntheticLog({ id: 'log-old', startDate: oldDate }),
+              syntheticLog({ id: 'log-recent', startDate: recentDate }),
+            ]),
+          ),
+      },
+    ])
+
+    const h = harness(tokenEnv(tmp))
+    await h.run(['stats', '--json', '--weeks', '1', '--tag', 'push'], mock)
+    const doc = JSON.parse(h.out.join(''))
+    expect(doc.totals.workouts).toBe(1)
+  })
+
+  it('workouts --fresh --tag composes both flags', async () => {
+    const h = harness(tokenEnv(tmp))
+    await h.run(
+      ['workouts', '--plain', '--limit', '5', '--fresh', '--tag', 'push'],
+      taggedFetch([MEASUREMENT_IDS.squatMachine]),
+    )
+    expect(h.out.join('')).toContain('Leg Day')
   })
 })

@@ -10,7 +10,7 @@
  */
 
 import type { LogsWalk, StrongClient } from '../api/client.js'
-import type { Measurement, RawLog, Workout } from '../api/types.js'
+import type { Measurement, RawLog, Tag, Workout } from '../api/types.js'
 import { ApiError, AuthError, UsageError } from '../cli/errors.js'
 import { getEnv } from '../config/config.js'
 import {
@@ -52,6 +52,8 @@ export interface WorkoutData {
   /** Raw preference strings (e.g. 'POUNDS' / 'MILES'), null when absent. */
   weightUnit: string | null
   distanceUnit: string | null
+  /** Exercise tags from the user doc (same getUser call as measurements). */
+  tags: Tag[]
   /**
    * Cache provenance — fromCache=false means a full walk happened this run.
    * `fullResync` says why when it was not the user's explicit --fresh.
@@ -76,7 +78,7 @@ export async function loadWorkoutData(
 
   const [{ logs, cache, fullResync }, userResp, globalMeasurements] = await Promise.all([
     syncWorkoutLogs(client, userId, opts),
-    client.getUser(userId, { includes: ['measurement'] }),
+    client.getUser(userId, { includes: ['measurement', 'tag'] }),
     client.getAllMeasurements(),
   ])
 
@@ -85,6 +87,7 @@ export async function loadWorkoutData(
   const measurementMap = buildMeasurementMap(globalList, userMeasurements)
   const workouts = transformLogs(logs, measurementMap)
 
+  const tags = userResp._embedded?.tag ?? []
   const weightUnit = (userResp.preferences?.weightUnit?.[userId] as string | undefined) ?? null
   const distanceUnit = (userResp.preferences?.distanceUnit?.[userId] as string | undefined) ?? null
 
@@ -93,6 +96,7 @@ export async function loadWorkoutData(
     measurementMap,
     globalMeasurements: globalMeasurements._embedded?.measurement ?? [],
     userMeasurements,
+    tags,
     userId,
     username: session.username ?? userResp.username ?? userResp.email,
     weightUnit,
@@ -110,22 +114,18 @@ export async function loadWorkoutData(
  * Resolve a `--tag <query>` flag to the set of measurement (exercise) ids it
  * covers, so callers can filter workouts/stats/exports to exercises carrying
  * that tag. Matching is case-insensitive against the tag's display name or
- * its slug id (e.g. `arms` / `ARMS`). Tags are fetched from the user doc
- * (`include=tag`) — a small, single-page collection (verified live: 10 tags).
+ * its slug id (e.g. `arms` / `ARMS`). Tags come from the user doc
+ * (`include=tag`), already fetched by `loadWorkoutData` in the same call as
+ * the measurements — no extra API round-trip.
  *
  * Throws a UsageError when the query matches nothing (listing available tag
  * names) or matches more than one tag (listing the ambiguous matches).
  */
-export async function resolveTaggedMeasurementIds(
-  client: StrongClient,
-  userId: string,
-  query: string,
-): Promise<Set<string>> {
-  const tags = await client.getTags(userId)
+export function resolveTaggedMeasurementIds(tags: Tag[], query: string): Set<string> {
   const q = query.toLowerCase()
   const matches = tags.filter((t) => {
     const name = tagName(t).toLowerCase()
-    return name === q || (typeof t.id === 'string' && t.id.toLowerCase() === q)
+    return name === q || t.id.toLowerCase() === q
   })
 
   if (matches.length === 0) {
