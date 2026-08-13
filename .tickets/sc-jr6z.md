@@ -11,7 +11,7 @@ tags: [tooling, ci, tech-debt]
 ---
 # chore: biome.json schema pinned to 2.3.11 vs installed 2.5.7
 
-PLAN.md backlog P3. biome.json pins $schema https://biomejs.dev/schemas/2.3.11/schema.json while the installed CLI (npx biome --version) is 2.5.7. This produces schema drift warnings and risks lint/format config drift between what CI runs and what editors use.
+Tooling backlog (P3). biome.json pins $schema https://biomejs.dev/schemas/2.3.11/schema.json while the installed CLI (npx biome --version) is 2.5.7. This produces schema drift warnings and risks lint/format config drift between what CI runs and what editors use.
 
 ## Design
 

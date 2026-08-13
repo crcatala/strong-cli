@@ -362,7 +362,7 @@ export class StrongClient {
   /**
    * Walk the user's workout logs following `_links.next` continuation
    * pagination, optionally resuming from a previously stored continuation
-   * token (incremental sync; see the key decisions in PLAN.md).
+   * token (incremental sync; see the Caching section in README.md).
    *
    * Safety: capped at {@link DEFAULT_MAX_PAGES} pages, aborts on a repeated
    * continuation token (self-referencing `next` loop), and paces page requests

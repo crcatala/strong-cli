@@ -11,7 +11,7 @@ tags: [cache, data]
 ---
 # cache: deleted workouts persist in cache until --fresh
 
-PLAN.md Cache gap. src/lib/cache.ts merges logs by id (newest wins) and the Strong API does not tombstone deletions, so a workout removed in the app stays in ~/.config/strong-cli/cache.json and shows up in workouts/stats/export until a full --fresh re-sync. Documented limit in the module docstring.
+Cache-deletion gap. src/lib/cache.ts merges logs by id (newest wins) and the Strong API does not tombstone deletions, so a workout removed in the app stays in ~/.config/strong-cli/cache.json and shows up in workouts/stats/export until a full --fresh re-sync. Documented limit in the module docstring.
 
 ## Design
 

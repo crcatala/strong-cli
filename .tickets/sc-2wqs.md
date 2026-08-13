@@ -11,7 +11,7 @@ tags: [config, tests, tech-debt]
 ---
 # config: setEnv() module-level mutable singleton is a test footgun
 
-PLAN.md backlog P2. src/config/config.ts keeps a module-global env via let _env = process.env and setEnv() mutates it (tests + run.ts injection). Vitest runs test files in parallel; any test that calls setEnv() races with other test files reading config. Currently safe only because the config tests reset env in afterEach. This will bite as soon as CLI-level or integration tests exercise config paths.
+Configuration-isolation backlog (P2). src/config/config.ts keeps a module-global env via let _env = process.env and setEnv() mutates it (tests + run.ts injection). Vitest runs test files in parallel; any test that calls setEnv() races with other test files reading config. Currently safe only because the config tests reset env in afterEach. This will bite as soon as CLI-level or integration tests exercise config paths.
 
 ## Design
 
