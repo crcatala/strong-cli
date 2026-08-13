@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildExerciseDefinition } from '../../../src/write/entity-builders.js'
 import { makeClock } from '../../../src/write/ids.js'
+import { asEntityView } from '../../helpers/fixtures.js'
 
 const clock = makeClock(() => 1_700_000_000_000)
 
@@ -52,7 +53,7 @@ describe('buildExerciseDefinition', () => {
       { cellType: 'RPE', mandatory: false, isExponent: true, index: 1 },
       { cellType: 'BARBELL_WEIGHT', mandatory: false, isExponent: false, index: 2 },
     ])
-    expect(def._links?.tag).toEqual([
+    expect(asEntityView(def)._links.tag).toEqual([
       { href: '/api/users/user-42/tags/tag-1' },
       { href: '/api/users/user-42/tags/tag-2' },
     ])
@@ -62,6 +63,6 @@ describe('buildExerciseDefinition', () => {
     const def = buildExerciseDefinition({ name: 'No Tags', cellTypeConfigs: [] }, 'user-1', {
       clock,
     })
-    expect(def._links?.tag).toEqual([])
+    expect(asEntityView(def)._links.tag).toEqual([])
   })
 })

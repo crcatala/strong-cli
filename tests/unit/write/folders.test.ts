@@ -9,6 +9,7 @@ import {
 import { makeClock } from '../../../src/write/ids.js'
 import { emptySnapshot } from '../../../src/write/snapshot-store.js'
 import type { Snapshot } from '../../../src/write/types.js'
+import { asEntityView } from '../../helpers/fixtures.js'
 
 const clock = makeClock(() => 1_700_000_000_000)
 
@@ -59,7 +60,9 @@ describe('defaultFolder', () => {
 describe('addTemplateToFolder', () => {
   it('appends the template href and bumps lastChanged', () => {
     const updated = addTemplateToFolder(myTemplates, 'user-1', 'tpl-1', clock)
-    expect(updated._links.template).toEqual([{ href: '/api/users/user-1/templates/tpl-1' }])
+    expect(asEntityView(updated)._links.template).toEqual([
+      { href: '/api/users/user-1/templates/tpl-1' },
+    ])
     expect(updated.lastChanged).toBe(clock())
     // Original is not mutated.
     expect(myTemplates._links.template).toEqual([])
@@ -68,7 +71,9 @@ describe('addTemplateToFolder', () => {
   it('is idempotent — does not duplicate an existing href', () => {
     const withLink = addTemplateToFolder(myTemplates, 'user-1', 'tpl-1', clock)
     const again = addTemplateToFolder(withLink, 'user-1', 'tpl-1', clock)
-    expect(again._links.template).toEqual([{ href: '/api/users/user-1/templates/tpl-1' }])
+    expect(asEntityView(again)._links.template).toEqual([
+      { href: '/api/users/user-1/templates/tpl-1' },
+    ])
   })
 })
 
@@ -77,7 +82,9 @@ describe('removeTemplateFromFolder', () => {
     const withTwo = addTemplateToFolder(myTemplates, 'user-1', 'tpl-1', clock)
     const withTwo2 = addTemplateToFolder(withTwo, 'user-1', 'tpl-2', clock)
     const updated = removeTemplateFromFolder(withTwo2, 'user-1', 'tpl-1', clock)
-    expect(updated._links.template).toEqual([{ href: '/api/users/user-1/templates/tpl-2' }])
+    expect(asEntityView(updated)._links.template).toEqual([
+      { href: '/api/users/user-1/templates/tpl-2' },
+    ])
   })
 })
 

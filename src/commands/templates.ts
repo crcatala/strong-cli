@@ -15,7 +15,6 @@ import { AuthError, UsageError } from '../cli/errors.js'
 import { logVerbose, logWarning, output } from '../cli/output.js'
 import { templateName } from '../transform/workouts.js'
 import { makeClock } from '../write/ids.js'
-import type { ExerciseInput, SetInput } from '../write/log-builder.js'
 import { saveSnapshot } from '../write/snapshot-store.js'
 import { SyncEngine } from '../write/sync-engine.js'
 import { WriteEngine } from '../write/write-engine.js'
@@ -24,6 +23,7 @@ import {
   EntityNotFoundError,
   TemplateWriteService,
 } from '../write/write-service.js'
+import { collectExercise, parseExerciseSpec } from './set-spec.js'
 
 /**
  * ToS/risk warning shown in write subcommand help (epic posture): writes are
@@ -68,58 +68,6 @@ async function createTemplateWriteService() {
     clock: makeClock(),
     userId: session.userId,
   })
-}
-
-/**
- * Parse a single set spec `reps[@weight][~rpe]` (weight in display units,
- * converted to kg on the wire). e.g. `10`, `10@60`, `8@60~8`.
- */
-function parseSetSpec(spec: string): SetInput {
-  // reps[@weight][~rpe]; RPE allows half-steps (8.5) like the read path.
-  const m = /^(\d+)(?:@([\d.]+))?(?:~([\d.]+))?$/.exec(spec.trim())
-  if (!m) {
-    throw new UsageError(
-      `Invalid set spec "${spec}" — expected reps[@weight][~rpe], e.g. 10@60 or 8@60~8.5`,
-    )
-  }
-  const reps = Number.parseInt(m[1], 10)
-  const weight = m[2] !== undefined ? Number.parseFloat(m[2]) : 0
-  const rpe = m[3] !== undefined ? Number.parseFloat(m[3]) : undefined
-  if (!Number.isFinite(reps) || reps <= 0) {
-    throw new UsageError(`Invalid reps in set spec "${spec}"`)
-  }
-  if (!Number.isFinite(weight) || weight < 0) {
-    throw new UsageError(`Invalid weight in set spec "${spec}"`)
-  }
-  if (rpe !== undefined && (!Number.isFinite(rpe) || rpe <= 0)) {
-    throw new UsageError(`Invalid RPE in set spec "${spec}"`)
-  }
-  return { reps, weight, rpe }
-}
-
-/** Parse an `--exercise <id>:<sets>` spec, e.g. `ex-1:10@60,8@70`. */
-function parseExerciseSpec(spec: string): ExerciseInput {
-  const idx = spec.indexOf(':')
-  if (idx <= 0) {
-    throw new UsageError(
-      `Invalid --exercise "${spec}" — expected <exercise-id>:<sets>, e.g. ex-1:10@60,8@70`,
-    )
-  }
-  const exerciseId = spec.slice(0, idx).trim()
-  const sets = spec
-    .slice(idx + 1)
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
-    .map(parseSetSpec)
-  if (sets.length === 0) {
-    throw new UsageError(`--exercise "${spec}" must list at least one set`)
-  }
-  return { exerciseId, sets }
-}
-
-function collectExercise(value: string, previous: string[]): string[] {
-  return [...previous, value]
 }
 
 /** Convert write-layer errors into clean UsageErrors with guidance. */

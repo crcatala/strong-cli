@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { StrongClient } from '../../../src/api/client.js'
 import { emptySnapshot, loadSnapshot, saveSnapshot } from '../../../src/write/snapshot-store.js'
 import { SyncEngine } from '../../../src/write/sync-engine.js'
-import { COLLECTIONS } from '../../../src/write/types.js'
+import { COLLECTIONS, type Entity } from '../../../src/write/types.js'
 import { futureJwt, memStore, mockResponse, syntheticLog } from '../../helpers/fixtures.js'
 
 let tmp: string
@@ -104,7 +104,7 @@ describe('SyncEngine', () => {
   it('delta sync merges new entities over the stored snapshot and keeps the rest', async () => {
     // Seed a stored snapshot with log-1 + a stored continuation.
     const seeded = emptySnapshot('user-1')
-    seeded.entities.log['log-1'] = syntheticLog({ id: 'log-1' })
+    seeded.entities.log['log-1'] = syntheticLog({ id: 'log-1' }) as unknown as Entity
     seeded.continuation = 'TOKEN5'
     saveSnapshot(seeded, snapshotPath())
 
@@ -126,7 +126,7 @@ describe('SyncEngine', () => {
   it('full re-walk on a stale cursor (HTTP 400) replaces the stored snapshot', async () => {
     // Seed a snapshot with a stale continuation that the server rejects.
     const seeded = emptySnapshot('user-1')
-    seeded.entities.log['log-1'] = syntheticLog({ id: 'log-1' })
+    seeded.entities.log['log-1'] = syntheticLog({ id: 'log-1' }) as unknown as Entity
     seeded.continuation = 'STALE'
     saveSnapshot(seeded, snapshotPath())
 

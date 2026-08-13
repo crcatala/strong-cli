@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { makeClock } from '../../../src/write/ids.js'
 import { softDelete } from '../../../src/write/soft-delete.js'
 import type { Entity } from '../../../src/write/types.js'
+import { asEntityView } from '../../helpers/fixtures.js'
 
 /** A workout-shaped entity with nested cellSetGroup/cellSets/cells. */
 function workoutEntity(): Entity {
@@ -34,12 +35,12 @@ describe('softDelete', () => {
   })
 
   it('cascades isHidden through cellSetGroup, cellSets and cells', () => {
-    const deleted = softDelete(workoutEntity(), makeClock())
-    const group = deleted._embedded?.cellSetGroup?.[0] as Record<string, unknown>
+    const deleted = asEntityView(softDelete(workoutEntity(), makeClock()))
+    const group = deleted._embedded.cellSetGroup[0]
     expect(group.isHidden).toBe(true)
-    const set = (group.cellSets as Record<string, unknown>[])[0]
+    const set = group.cellSets[0]
     expect(set.isHidden).toBe(true)
-    const cell = (set.cells as Record<string, unknown>[])[0]
+    const cell = set.cells[0]
     expect(cell.isHidden).toBe(true)
   })
 
@@ -47,8 +48,8 @@ describe('softDelete', () => {
     const entity = workoutEntity()
     softDelete(entity, makeClock())
     expect(entity.isHidden).toBeUndefined()
-    const group = (entity._embedded?.cellSetGroup as Record<string, unknown>[] | undefined)?.[0]
-    expect(group?.isHidden).toBeUndefined()
+    const group = asEntityView(entity)._embedded.cellSetGroup[0]
+    expect(group.isHidden).toBeUndefined()
   })
 
   it('is a no-op for entities without cellSetGroup', () => {

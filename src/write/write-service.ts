@@ -1,15 +1,17 @@
 /**
- * Write service for custom exercise definitions (sc-k14b).
+ * Write services for custom exercise definitions (sc-k14b), routine templates
+ * (sc-ho9c), and completed workouts (sc-iwa3).
  *
- * Ported from jerhinesmith/strong-mcp (MIT) — src/services/write-service.ts
- * (createExercise / updateExerciseName / archiveExercise). Each op builds its
- * changes inside the serialized write engine: refresh (delta sync) -> build ->
- * PUT -> optimistic merge -> persist. All three shapes were captured from real
- * app traffic, so no post-write serverConfirmed verify loop is needed here.
+ * Ported from jerhinesmith/strong-mcp (MIT) — src/services/write-service.ts.
+ * Each op builds its changes inside the serialized write engine: refresh
+ * (delta sync) -> build -> PUT -> optimistic merge -> persist. The exercise /
+ * template / log / delete shapes were captured from real app traffic, so no
+ * post-write serverConfirmed verify loop is needed for them; updateWorkoutSets
+ * is INFERRED and runs the verify loop (see WorkoutWriteService).
  */
 
 import { resolveWeightUnit, type WeightUnit } from '../lib/units.js'
-import { editEntityName } from './edit.js'
+import { editEntityName, editSetCells, type SetEdit, verifySetCells } from './edit.js'
 import { buildExerciseDefinition, type CellTypeConfig } from './entity-builders.js'
 import {
   addTemplateToFolder,
@@ -176,5 +178,123 @@ export class TemplateWriteService {
       }
       return { changes, summary: { id, deleted: true as const } }
     })
+  }
+}
+
+// ============================================================================
+// Workout write service (sc-iwa3)
+// ============================================================================
+
+export interface WorkoutWriteServiceOptions {
+  engine: WriteEngine
+  clock: Clock
+  userId: string
+  /**
+   * Full re-sync returning pristine server truth. Used only to verify the
+   * INFERRED updateWorkoutSets shape after a 2xx — the engine's optimistic
+   * local snapshot cannot confirm the server accepted the edit. Never throws
+   * the write; a failed re-sync just leaves serverConfirmed undefined.
+   */
+  resync: () => Promise<Snapshot>
+  /**
+   * Persist pristine server truth after an UNCONFIRMED edit. Without this, an
+   * edit the server did not reflect would stay in the persisted snapshot and
+   * be replayed into later writes (the delta-sync continuation has already
+   * advanced past it). Runs on the engine's serialized tail so it cannot race
+   * another write. Optional — when omitted, an unconfirmed edit leaves the
+   * optimistic snapshot in place (callers should reconcile themselves).
+   */
+  reconcile?: (fresh: Snapshot) => Promise<void> | void
+}
+
+/**
+ * Write service for completed workouts (sc-iwa3).
+ *
+ * Ported from jerhinesmith/strong-mcp (MIT) — src/services/write-service.ts
+ * (logWorkout / deleteWorkout / updateWorkoutSets). logWorkout builds a
+ * WORKOUT log via buildLog (captured shape); deleteWorkout soft-deletes with
+ * the cascading isHidden shape (captured). updateWorkoutSets is one of two
+ * INFERRED shapes: the workout-edit PUT was never captured from traffic, so
+ * it re-sends the log document with only the targeted cells rewritten
+ * (byte-for-byte preservation of untouched cells) and then re-syncs server
+ * truth to confirm, reporting serverConfirmed: true | false | undefined.
+ * An unconfirmed edit is reconciled to pristine server truth (when a
+ * `reconcile` callback is provided) so the optimistic snapshot cannot replay
+ * it into later writes.
+ */
+export class WorkoutWriteService {
+  constructor(private readonly opts: WorkoutWriteServiceOptions) {}
+
+  /** Log a completed workout (startDate/endDate = now; optional templateId link). */
+  logWorkout(input: BuildLogInput): Promise<{ id: string; name: string; exercises: number }> {
+    return this.opts.engine.write((snapshot) => {
+      const log = buildLog('WORKOUT', input, snapshot, {
+        clock: this.opts.clock,
+        weightUnit: weightUnitOf(snapshot),
+      })
+      return {
+        changes: [{ collection: 'log', entity: log }],
+        summary: { id: log.id, name: input.name, exercises: input.exercises.length },
+      }
+    })
+  }
+
+  /** Soft-delete a completed workout (cascading isHidden through cellSetGroup). */
+  deleteWorkout(id: string): Promise<{ id: string; deleted: true }> {
+    return this.opts.engine.write((snapshot) => {
+      const log = requireVisible(snapshot, 'log', id)
+      return {
+        changes: [{ collection: 'log', entity: softDelete(log, this.opts.clock) }],
+        summary: { id, deleted: true as const },
+      }
+    })
+  }
+
+  /**
+   * INFERRED write shape: edit sets by position, then re-sync server truth
+   * and verify. serverConfirmed distinguishes "landed and verified" from
+   * "PUT returned 2xx but server truth doesn't reflect it yet" (local view
+   * is optimistic — re-sync or re-edit to reconcile) and from undefined when
+   * the confirmation re-sync failed. Bad group/set indices and edits that
+   * target a cell type the set lacks throw BEFORE any PUT.
+   */
+  async updateWorkoutSets(
+    id: string,
+    edits: SetEdit[],
+  ): Promise<{ id: string; serverConfirmed?: boolean }> {
+    // Resolve the unit ONCE so the edit we write and the verification we run
+    // agree even if the preference changed during the mid-write refresh.
+    let weightUnit: WeightUnit = 'POUNDS'
+    let sent: Entity | undefined // the document we PUT — baseline for structural verify
+    const summary = await this.opts.engine.write((snapshot) => {
+      const log = requireVisible(snapshot, 'log', id)
+      weightUnit = weightUnitOf(snapshot)
+      sent = editSetCells(log, edits, { clock: this.opts.clock, weightUnit })
+      return { changes: [{ collection: 'log', entity: sent }], summary: { id } }
+    })
+
+    // Verify + reconcile on the serialized tail so no other write interleaves.
+    const serverConfirmed = await this.opts.engine.exclusive(async () => {
+      const fresh = await this.safeResync()
+      if (!fresh) return undefined
+      const confirmed = verifySetCells(sent, fresh.entities.log[id], edits, { weightUnit })
+      // An unconfirmed edit must not stay in the persisted snapshot, or later
+      // writes would build on (and replay) unverified data. Reconcile to the
+      // pristine server truth we just fetched.
+      if (!confirmed && this.opts.reconcile) {
+        await this.opts.reconcile(fresh)
+      }
+      return confirmed
+    })
+    return { ...summary, serverConfirmed }
+  }
+
+  /** Full re-sync for post-write verification; never throws (see class docs). */
+  private async safeResync(): Promise<Snapshot | null> {
+    try {
+      return await this.opts.resync()
+    } catch {
+      return null
+    }
   }
 }

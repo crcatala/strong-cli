@@ -12,7 +12,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { resetEnv } from '../../src/config/config.js'
 import { runCli } from '../../src/run.js'
-import { createFetchMock, futureJwt, mockResponse } from '../helpers/fixtures.js'
+import { createFetchMock, futureJwt, type LooseEntity, mockResponse } from '../helpers/fixtures.js'
 
 let tmp: string
 
@@ -61,7 +61,7 @@ function userDoc(measurements: unknown[] = []) {
 
 /** Mock the write path: user-doc walk (GET) + envelope PUT (captured). */
 function writeFetch(measurements: unknown[] = []) {
-  const puts: Array<{ body: { _embedded: Record<string, unknown[]> } }> = []
+  const puts: Array<{ body: { _embedded: Record<string, LooseEntity[]> } }> = []
   const fetchImpl = createFetchMock([
     {
       match: (url, init) => url.includes('/api/users/user-1') && (init?.method ?? 'GET') === 'GET',

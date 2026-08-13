@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `test:typecheck` (`tsc -p tsconfig.test.json`) now type-checks test files in
+  addition to `src`, wired into `npm run verify` and CI. The main build
+  excludes `tests/`, so a broken import or fixture in a test previously only
+  failed at runtime (caught live: a missing test import blew up the workout
+  live flow). Test-only fetch/entity typing lives in
+  `tests/helpers/fetch-types.d.ts` and `tests/helpers/fixtures.ts`
+  (`LooseEntity`, `WriteEntityView`/`asEntityView`).
+
+- Opt-in write commands for completed workouts (sc-iwa3):
+  `strong workout log <name> --write --exercise <id>:<sets> [--template <id>]`,
+  `strong workout delete <id> --write`, and
+  `strong workout edit <id> --set <groupIndex>:<setIndex> [--reps N] [--weight W] [--rpe R] --write`.
+  Writes are gated behind the explicit `--write` flag (ToS/risk acknowledgment);
+  defaults remain read-only.
+  - Write-layer ports from strong-mcp (MIT): `logWorkout` / `deleteWorkout`
+    (captured shapes; `src/write/write-service.ts`), and `editSetCells` /
+    `verifySetCells` (`src/write/edit.ts`). `log` builds a WORKOUT log via the
+    existing `buildLog` (startDate/endDate = now, optional template link, weights
+    canonical kg). `delete` soft-deletes with the cascading isHidden shape.
+  - `workout edit` is one of the two INFERRED write shapes (never captured from
+    app traffic): it re-sends the log document with only the targeted cells
+    rewritten (untouched cells preserved byte-for-byte) and then re-syncs
+    server truth, reporting `serverConfirmed: true | false | undefined` in
+    plain and JSON output. An unconfirmed edit is automatically reconciled to
+    pristine server truth (serialized on the write engine's tail) so the
+    optimistic snapshot cannot replay it into later writes. Bad group/set
+    indices or edits targeting a cell type the set lacks fail with a clean
+    `UsageError` before any PUT. `--reps` must be a positive integer; `--weight`
+    accepts 0 (clearing added load on bodyweight sets), matching set-spec
+    logging.
+  - Set specs (`reps[@weight][~rpe]`) and `--exercise` parsing extracted to
+    `src/commands/set-spec.ts`, shared with `strong templates create`.
+  - Weight-cell type set shared between `log-builder.ts` and `edit.ts`
+    (`OTHER_WEIGHT`/`PLATE_WEIGHT` machine exercises can be edited too).
+  - Tests: `editSetCells`/`verifySetCells` unit tests, `WorkoutWriteService`
+    unit tests (confirmed / unconfirmed / failed-re-sync paths), CLI tests for
+    `workout log|delete|edit` (incl. opt-in gating and serverConfirmed
+    reporting), and a live disposable-account flow test
+    (log -> edit -> verify -> delete -> verify) gated by `RUN_LIVE_WRITE_TESTS`.
+
 ### Changed
 
 - `strong exercises create` now validates `--cell-type` against the exact

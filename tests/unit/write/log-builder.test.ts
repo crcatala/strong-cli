@@ -3,6 +3,7 @@ import { makeClock } from '../../../src/write/ids.js'
 import { buildLog, restSeconds } from '../../../src/write/log-builder.js'
 import { emptySnapshot } from '../../../src/write/snapshot-store.js'
 import type { Snapshot } from '../../../src/write/types.js'
+import { asEntityView } from '../../helpers/fixtures.js'
 
 const clock = makeClock(() => 1_700_000_000_000)
 
@@ -32,14 +33,16 @@ const squat = {
 describe('buildLog (TEMPLATE)', () => {
   it('builds a TEMPLATE entity with cellSetGroup derived from cellTypeConfigs', () => {
     const s = snapshot({ 'ex-1': squat })
-    const t = buildLog(
-      'TEMPLATE',
-      {
-        name: 'Push Day',
-        exercises: [{ exerciseId: 'ex-1', sets: [{ reps: 10, weight: 60, rpe: 8 }] }],
-      },
-      s,
-      { clock, weightUnit: 'KILOGRAMS' },
+    const t = asEntityView(
+      buildLog(
+        'TEMPLATE',
+        {
+          name: 'Push Day',
+          exercises: [{ exerciseId: 'ex-1', sets: [{ reps: 10, weight: 60, rpe: 8 }] }],
+        },
+        s,
+        { clock, weightUnit: 'KILOGRAMS' },
+      ),
     )
 
     expect(t.logType).toBe('TEMPLATE')
@@ -54,7 +57,7 @@ describe('buildLog (TEMPLATE)', () => {
     expect(t._links.template).toBeUndefined()
 
     const group = t._embedded.cellSetGroup[0]
-    expect(group._links.measurement).toEqual({ href: '/api/users/user-1/measurements/ex-1' })
+    expect(group._links?.measurement).toEqual({ href: '/api/users/user-1/measurements/ex-1' })
     expect(group.isHidden).toBe(false)
     // One working set + one trailing REST_TIMER set.
     expect(group.cellSets).toHaveLength(2)
@@ -73,31 +76,35 @@ describe('buildLog (TEMPLATE)', () => {
 
   it('converts display-unit weights to kg on the wire', () => {
     const s = snapshot({ 'ex-1': squat })
-    const t = buildLog(
-      'TEMPLATE',
-      { name: 'Lb Day', exercises: [{ exerciseId: 'ex-1', sets: [{ reps: 5, weight: 220 }] }] },
-      s,
-      { clock, weightUnit: 'POUNDS' },
+    const t = asEntityView(
+      buildLog(
+        'TEMPLATE',
+        { name: 'Lb Day', exercises: [{ exerciseId: 'ex-1', sets: [{ reps: 5, weight: 220 }] }] },
+        s,
+        { clock, weightUnit: 'POUNDS' },
+      ),
     )
     const weightCell = t._embedded.cellSetGroup[0].cellSets[0].cells.find(
       (c: { cellType: string }) => c.cellType === 'BARBELL_WEIGHT',
     )
     // 220 lb ≈ 100 kg (LB_PER_KG ≈ 2.20462).
-    expect(Number(weightCell.value)).toBeCloseTo(100, 0)
+    expect(Number(weightCell?.value)).toBeCloseTo(100, 0)
   })
 
   it('writes null RPE when rpe is omitted', () => {
     const s = snapshot({ 'ex-1': squat })
-    const t = buildLog(
-      'TEMPLATE',
-      { name: 'No RPE', exercises: [{ exerciseId: 'ex-1', sets: [{ reps: 10, weight: 60 }] }] },
-      s,
-      { clock, weightUnit: 'KILOGRAMS' },
+    const t = asEntityView(
+      buildLog(
+        'TEMPLATE',
+        { name: 'No RPE', exercises: [{ exerciseId: 'ex-1', sets: [{ reps: 10, weight: 60 }] }] },
+        s,
+        { clock, weightUnit: 'KILOGRAMS' },
+      ),
     )
     const rpeCell = t._embedded.cellSetGroup[0].cellSets[0].cells.find(
       (c: { cellType: string }) => c.cellType === 'RPE',
     )
-    expect(rpeCell.value).toBeNull()
+    expect(rpeCell?.value).toBeNull()
   })
 
   it('throws for an exercise id absent from the snapshot', () => {
@@ -150,31 +157,35 @@ describe('buildLog (TEMPLATE)', () => {
       ],
     }
     const s = snapshot({ 'ex-3': machine })
-    const t = buildLog(
-      'TEMPLATE',
-      { name: 'Machine', exercises: [{ exerciseId: 'ex-3', sets: [{ reps: 12, weight: 40 }] }] },
-      s,
-      { clock, weightUnit: 'KILOGRAMS' },
+    const t = asEntityView(
+      buildLog(
+        'TEMPLATE',
+        { name: 'Machine', exercises: [{ exerciseId: 'ex-3', sets: [{ reps: 12, weight: 40 }] }] },
+        s,
+        { clock, weightUnit: 'KILOGRAMS' },
+      ),
     )
     const weightCell = t._embedded.cellSetGroup[0].cellSets[0].cells.find(
       (c: { cellType: string }) => c.cellType === 'OTHER_WEIGHT',
     )
-    expect(weightCell.value).toBe('40')
+    expect(weightCell?.value).toBe('40')
   })
 })
 
 describe('buildLog (WORKOUT)', () => {
   it('adds startDate/endDate and an optional template link', () => {
     const s = snapshot({ 'ex-1': squat })
-    const t = buildLog(
-      'WORKOUT',
-      {
-        name: 'Leg Day',
-        templateId: 'tpl-1',
-        exercises: [{ exerciseId: 'ex-1', sets: [{ reps: 10, weight: 60 }] }],
-      },
-      s,
-      { clock, weightUnit: 'KILOGRAMS' },
+    const t = asEntityView(
+      buildLog(
+        'WORKOUT',
+        {
+          name: 'Leg Day',
+          templateId: 'tpl-1',
+          exercises: [{ exerciseId: 'ex-1', sets: [{ reps: 10, weight: 60 }] }],
+        },
+        s,
+        { clock, weightUnit: 'KILOGRAMS' },
+      ),
     )
     expect(t.logType).toBe('WORKOUT')
     expect(t.startDate).toBe(clock())
