@@ -43,6 +43,21 @@ npm run build
 node dist/cli.js <command>
 ```
 
+To test the built checkout as a globally available, native-style `strong`
+command, link the package after each build:
+
+```bash
+npm run build
+npm link
+strong <command>
+
+# remove the global link when finished
+npm unlink -g @crcatala/strong-cli
+```
+
+`npm link` points the global `strong` executable at this checkout's `dist/`
+directory, so rerun `npm run build` after source changes before testing again.
+
 **Startup performance**: the *built* CLI and the bun dev path are roughly equivalent
 (~70–85 ms to first output). `npx tsx` adds ~400 ms of npm/npx/loader overhead on top,
 so use `bun src/cli.ts` (or the built `dist`) for interactive use. Data commands
