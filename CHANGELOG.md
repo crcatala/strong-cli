@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Opt-in write commands for custom exercise definitions (sc-k14b):
+  `strong exercises create <name> --write --cell-type <types> [--mandatory]
+  [--exponent] [--notes] [--tag]`, `strong exercises rename <id> <name> --write`,
+  `strong exercises archive <id> --write`. Writes are gated behind the explicit
+  `--write` flag (ToS/risk acknowledgment); defaults remain read-only.
+  - Write layer ports from strong-mcp (MIT): `buildExerciseDefinition`
+    (`src/write/entity-builders.ts`), `editEntityName` (`src/write/edit.ts`),
+    and `ExerciseWriteService` (`src/write/write-service.ts`) wired through the
+    serialized snapshot refresh -> envelope PUT -> optimistic merge -> persist
+    engine (sc-m3xf foundation).
+  - Live mutation test (create -> rename -> archive -> verify each step) gated
+    behind `RUN_LIVE_TESTS=1` + `RUN_LIVE_WRITE_TESTS=1` + matching
+    `STRONG_DISPOSABLE_USER_ID` — writes only ever touch a disposable account.
+
 ## [0.1.1] - 2026-08-07
 
 ### Added

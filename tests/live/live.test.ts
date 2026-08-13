@@ -19,9 +19,12 @@ import type { RawLog } from '../../src/api/types.js'
 import { AuthError } from '../../src/cli/errors.js'
 import { buildEnvelope } from '../../src/write/envelope.js'
 import { makeClock, newId } from '../../src/write/ids.js'
+import { saveSnapshot } from '../../src/write/snapshot-store.js'
 import { softDelete } from '../../src/write/soft-delete.js'
 import { SyncEngine } from '../../src/write/sync-engine.js'
 import { COLLECTIONS, type Entity } from '../../src/write/types.js'
+import { WriteEngine } from '../../src/write/write-engine.js'
+import { ExerciseWriteService } from '../../src/write/write-service.js'
 import { memStore } from './mem-store.js'
 
 const RUN_LIVE = process.env['RUN_LIVE_TESTS'] === '1'
@@ -193,6 +196,72 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
           const archivedOnServer = afterArchive.entities.measurement[created.id]
           expect(archivedOnServer === undefined || archivedOnServer.isHidden === true).toBe(true)
         }
+      }
+    },
+    180_000,
+  )
+
+  it.skipIf(!RUN_LIVE_WRITES)(
+    'full custom-exercise write flow through ExerciseWriteService: create -> rename -> archive, verified at each step',
+    async () => {
+      const username = process.env['STRONG_USERNAME'] ?? process.env['STRONG_USER']
+      const password = process.env['STRONG_PASSWORD']
+      const disposableUserId = process.env['STRONG_DISPOSABLE_USER_ID']
+      if (!username || !password || !disposableUserId) {
+        throw new Error('Write live tests require credentials and STRONG_DISPOSABLE_USER_ID')
+      }
+
+      const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+      const session = await client2.login(username, password)
+      if (session.userId !== disposableUserId) {
+        throw new Error(
+          'Refusing write live test: logged-in user does not match STRONG_DISPOSABLE_USER_ID',
+        )
+      }
+
+      // Production wiring: SyncEngine (delta-sync refresh + resync verify)
+      // -> WriteEngine (serialized refresh/build/PUT/merge/persist)
+      // -> ExerciseWriteService. Per-run temp snapshot path.
+      const snapshotPath = join(tmpdir(), `strong-live-exercise-svc-${Date.now()}.json`)
+      const sync = new SyncEngine({ client: client2, userId: session.userId, snapshotPath })
+      const engine = new WriteEngine({
+        refresh: () => sync.sync(),
+        put: (envelope) => client2.putEnvelope(session.userId, envelope),
+        persist: (s) => saveSnapshot(s, snapshotPath),
+      })
+      const service = new ExerciseWriteService({
+        engine,
+        clock: makeClock(),
+        userId: session.userId,
+      })
+
+      // create -> verify via pristine re-sync
+      const created = await service.createExercise({
+        name: `strong-cli svc ${newId()}`,
+        cellTypeConfigs: [
+          { cellType: 'REPS', mandatory: true },
+          { cellType: 'RPE', isExponent: true },
+        ],
+        notes: 'created by the sc-k14b live test',
+      })
+      let fresh = await sync.resync()
+      expect(fresh.entities.measurement[created.id]).toMatchObject({
+        id: created.id,
+        isHidden: false,
+        name: { custom: created.name },
+      })
+
+      // rename -> verify -> archive (cleanup in finally, even if rename fails)
+      const renamed = `${created.name} renamed`
+      try {
+        await service.updateExerciseName(created.id, renamed)
+        fresh = await sync.resync()
+        expect(fresh.entities.measurement[created.id]?.name).toEqual({ custom: renamed })
+      } finally {
+        await service.archiveExercise(created.id)
+        fresh = await sync.resync()
+        const archivedOnServer = fresh.entities.measurement[created.id]
+        expect(archivedOnServer === undefined || archivedOnServer.isHidden === true).toBe(true)
       }
     },
     180_000,

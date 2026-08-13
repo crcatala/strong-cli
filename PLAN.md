@@ -106,10 +106,15 @@ tests/
 
 ## Future work
 
-- Write API exploration (envelope-PUT sync, per strong-mcp) behind an explicit flag.
-  **Decision (2026-08-07): declined for now** — read-only is the intended purpose;
-  the ToS gray zone + account-termination risk are not worth it for the current
-  use case. Revisit only if needs change (closed sc-akkf).
+- Write API (envelope-PUT sync, ported from strong-mcp) is **in progress** —
+  see epic sc-7hhn. **Decision (2026-08-07): declined for now** (sc-akkf) —
+  read-only was the intended purpose; the ToS gray zone + account-termination
+  risk weren't worth it. **Superseded (2026-08-13, sc-7hhn): needs changed** —
+  an inventory of strong-mcp's 11-tool write surface showed the whole surface
+  is a gap in this CLI, so opt-in writes were added behind an explicit `--write`
+  flag (defaults stay read-only; live tests only ever touch a disposable
+  account). Custom-exercise create/rename/archive ship first (sc-k14b);
+  templates, workouts, and body measurements follow.
 - ~~Folders/tags listing~~ **done** — `strong folders` / `strong tags`
   (`src/commands/folders.ts`, `src/commands/tags.ts`; shapes verified live
   2026-08). ~~Possible follow-up: `--tag` filter on `workouts`/`stats`/`export`~~
