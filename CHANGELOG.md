@@ -9,13 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `test:typecheck` (`tsc -p tsconfig.test.json`) now type-checks test files in
-  addition to `src`, wired into `npm run verify` and CI. The main build
-  excludes `tests/`, so a broken import or fixture in a test previously only
-  failed at runtime (caught live: a missing test import blew up the workout
-  live flow). Test-only fetch/entity typing lives in
-  `tests/helpers/fetch-types.d.ts` and `tests/helpers/fixtures.ts`
-  (`LooseEntity`, `WriteEntityView`/`asEntityView`).
+- Opt-in write commands for body measurements (sc-hf54):
+  `strong measurements add <type> <value> --write` and
+  `strong measurements delete <id> --write`. Writes are gated behind the
+  explicit `--write` flag (ToS/risk acknowledgment); defaults remain read-only.
+  - `add` logs a measurement for `WEIGHT`, `BODY_FAT_PERCENTAGE`, or
+    `CALORIC_INTAKE`; `delete` soft-deletes an existing measurement.
+  - The parent `strong measurements` list command now accepts a
+    `-t, --type <type>` filter to scope results to a single measurement type.
 
 - Opt-in write commands for completed workouts (sc-iwa3):
   `strong workout log <name> --write --exercise <id>:<sets> [--template <id>]`,
@@ -43,25 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `src/commands/set-spec.ts`, shared with `strong templates create`.
   - Weight-cell type set shared between `log-builder.ts` and `edit.ts`
     (`OTHER_WEIGHT`/`PLATE_WEIGHT` machine exercises can be edited too).
-  - Tests: `editSetCells`/`verifySetCells` unit tests, `WorkoutWriteService`
-    unit tests (confirmed / unconfirmed / failed-re-sync paths), CLI tests for
-    `workout log|delete|edit` (incl. opt-in gating and serverConfirmed
-    reporting), and a live disposable-account flow test
-    (log -> edit -> verify -> delete -> verify) gated by `RUN_LIVE_WRITE_TESTS`.
-
-### Changed
-
-- `strong exercises create` now validates `--cell-type` against the exact
-  ordered signatures the backend accepts for custom exercise definitions
-  (sc-ri38, found via live probes on a disposable account). Any other
-  combination — e.g. `REPS,BARBELL_WEIGHT`, reordered `RPE,REPS`, or the
-  app-wide-only cell types `PLATE_WEIGHT`/`REST_TIMER`/`NOTE` — fails fast
-  with a clean `UsageError` before any PUT instead of surfacing the server's
-  opaque HTTP 400 `CELL_TYPE_CONFIGS_NOT_SUPPORTED`. `ASSISTED_BODYWEIGHT`
-  was added to the supported set (it was missing but the server accepts it).
-  Supported combos documented in `README.md` and `docs/api-inventory.md`.
-
-### Added
 
 - Opt-in write commands for routine templates (sc-ho9c):
   `strong templates create <name> --write --exercise <id>:<sets> [--folder <id>]`,
@@ -77,12 +59,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     serialized snapshot refresh -> envelope PUT -> optimistic merge -> persist
     engine (sc-m3xf foundation). Delete soft-deletes the template and unlinks
     it from its folder.
-  - Live mutation test (create -> rename -> delete -> verify each step,
-    including folder link/unlink) gated behind `RUN_LIVE_TESTS=1` +
-    `RUN_LIVE_WRITE_TESTS=1` + matching `STRONG_DISPOSABLE_USER_ID` — writes
-    only ever touch a disposable account.
-
-### Added
 
 - Opt-in write commands for custom exercise definitions (sc-k14b):
   `strong exercises create <name> --write --cell-type <types> [--mandatory]
@@ -94,9 +70,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     and `ExerciseWriteService` (`src/write/write-service.ts`) wired through the
     serialized snapshot refresh -> envelope PUT -> optimistic merge -> persist
     engine (sc-m3xf foundation).
-  - Live mutation test (create -> rename -> archive -> verify each step) gated
-    behind `RUN_LIVE_TESTS=1` + `RUN_LIVE_WRITE_TESTS=1` + matching
-    `STRONG_DISPOSABLE_USER_ID` — writes only ever touch a disposable account.
+
+### Changed
+
+- `strong exercises create` now validates `--cell-type` against the exact
+  ordered signatures the backend accepts for custom exercise definitions
+  (sc-ri38, found via live probes on a disposable account). Any other
+  combination — e.g. `REPS,BARBELL_WEIGHT`, reordered `RPE,REPS`, or the
+  app-wide-only cell types `PLATE_WEIGHT`/`REST_TIMER`/`NOTE` — fails fast
+  with a clean `UsageError` before any PUT instead of surfacing the server's
+  opaque HTTP 400 `CELL_TYPE_CONFIGS_NOT_SUPPORTED`. `ASSISTED_BODYWEIGHT`
+  was added to the supported set (it was missing but the server accepts it).
+  Supported combos documented in `README.md` and `docs/api-inventory.md`.
+- The CLI is now published to npm; the README setup uses the `npm install`
+  path, with source install demoted to a "Developing from source" section.
+
+### Fixed
+
+- Body measurements listing now reads the server's `measurementTypeValue`
+  field (previously read a non-existent `type`), so `WEIGHT` and
+  `BODY_FAT_PERCENTAGE` values display with the correct unit conversion and
+  rounding instead of falling through to the raw kcal formatting.
+- `strong templates list` now paginates via the user document, fixing the
+  sc-sfn8 gap where templates beyond the first page were missing.
+- `strong templates create` now rejects archived (hidden) exercise definitions
+  with a clean "Archived exercise id" `UsageError`, preserving the archive
+  contract that archived defs must not resolve for new writes.
+- Set specs now accept half-step RPE values (e.g. `8.5`), matching the read
+  path which already parses RPE with `parseFloat`.
+- `strong templates delete` now unlinks the template from hidden (soft-deleted)
+  folders too, not just visible ones.
 
 ## [0.1.1] - 2026-08-07
 
