@@ -435,6 +435,96 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
     },
     180_000,
   )
+
+  it.skipIf(!RUN_LIVE_WRITES)(
+    'full workout write flow through WorkoutWriteService: log -> edit (serverConfirmed) -> delete, verified at each step',
+    async () => {
+      const username = process.env['STRONG_USERNAME'] ?? process.env['STRONG_USER']
+      const password = process.env['STRONG_PASSWORD']
+      const disposableUserId = process.env['STRONG_DISPOSABLE_USER_ID']
+      if (!username || !password || !disposableUserId) {
+        throw new Error('Write live tests require credentials and STRONG_DISPOSABLE_USER_ID')
+      }
+
+      const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+      const session = await client2.login(username, password)
+      if (session.userId !== disposableUserId) {
+        throw new Error(
+          'Refusing write live test: logged-in user does not match STRONG_DISPOSABLE_USER_ID',
+        )
+      }
+
+      const snapshotPath = join(tmpdir(), `strong-live-workout-svc-${Date.now()}.json`)
+      const sync = new SyncEngine({ client: client2, userId: session.userId, snapshotPath })
+      const engine = new WriteEngine({
+        refresh: () => sync.sync(),
+        put: (envelope) => client2.putEnvelope(session.userId, envelope),
+        persist: (s) => saveSnapshot(s, snapshotPath),
+      })
+      const workoutService = new WorkoutWriteService({
+        engine,
+        clock: makeClock(),
+        userId: session.userId,
+        resync: () => sync.resync(),
+      })
+      const exerciseService = new ExerciseWriteService({
+        engine,
+        clock: makeClock(),
+        userId: session.userId,
+      })
+
+      let exerciseId: string | undefined
+      let created: { id: string; name: string } | undefined
+      try {
+        const ex = await exerciseService.createExercise({
+          name: `strong-cli wkt ${newId()}`,
+          cellTypeConfigs: [
+            { cellType: 'REPS', mandatory: true },
+            { cellType: 'RPE', isExponent: true },
+          ],
+          notes: 'created by the sc-iwa3 live test',
+        })
+        exerciseId = ex.id
+
+        created = await workoutService.logWorkout({
+          name: `strong-cli wkt ${newId()}`,
+          exercises: [{ exerciseId: ex.id, sets: [{ reps: 10, weight: 60 }] }],
+        })
+        let fresh = await sync.resync()
+        const createdOnServer = fresh.entities.log[created.id]
+        expect(createdOnServer).toMatchObject({ id: created.id, name: { custom: created.name } })
+        expect(createdOnServer?.isHidden).not.toBe(true)
+
+        // edit -> the INFERRED shape must be confirmed by the real server
+        const edited = await workoutService.updateWorkoutSets(created.id, [
+          { groupIndex: 0, setIndex: 0, reps: 8, weight: 65 },
+        ])
+        expect(edited.serverConfirmed).toBe(true)
+        fresh = await sync.resync()
+        const group = (
+          fresh.entities.log[created.id]?._embedded as { cellSetGroup?: unknown[] } | undefined
+        )?.cellSetGroup?.[0] as
+          | { cellSets?: { cells?: { cellType: string; value?: string | null }[] }[] }
+          | undefined
+        const working = group?.cellSets?.find((cs) =>
+          cs.cells?.some((c) => c.cellType !== 'REST_TIMER'),
+        )
+        const repsCell = working?.cells?.find((c) => c.cellType === 'REPS')
+        expect(repsCell?.value).toBe('8')
+      } finally {
+        if (created) {
+          await workoutService.deleteWorkout(created.id)
+          const fresh = await sync.resync()
+          const gone = fresh.entities.log[created.id]
+          expect(gone === undefined || gone.isHidden === true).toBe(true)
+        }
+        if (exerciseId) {
+          await exerciseService.archiveExercise(exerciseId)
+        }
+      }
+    },
+    180_000,
+  )
 })
 
 function buildLiveExercise(timestamp: string): Entity {

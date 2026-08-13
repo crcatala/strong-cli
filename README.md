@@ -232,6 +232,43 @@ Live-test policy: mutation tests are gated behind both `RUN_LIVE_TESTS=1`
 **and** `RUN_LIVE_WRITE_TESTS=1`, and refuse to run unless the logged-in user
 matches `STRONG_DISPOSABLE_USER_ID` (see [Tests](#tests)).
 
+### Workouts (opt-in write)
+
+Workouts are **your** completed workouts (the user doc's `log` collection).
+`log` builds a WORKOUT log with `startDate`/`endDate` = now (sets parsed from
+`reps[@weight][~rpe]`, weights written canonically in kg) and optionally links
+a template via `--template`. `delete` soft-deletes (cascading `isHidden`).
+Both shapes were captured from real app traffic, so no post-write
+verification loop is needed.
+
+`edit` is different: the workout-edit PUT was **never captured** from app
+traffic, so it is an *inferred* shape — the CLI re-sends the log document with
+only the targeted cells rewritten (untouched cells preserved byte-for-byte)
+and then re-syncs server truth to verify. Every `edit` result therefore
+reports `serverConfirmed`:
+
+- `true` — Strong accepted the edit (verified by re-sync);
+- `false` — the PUT returned 2xx but server truth does not reflect the edit
+  yet (the local view is optimistic; re-run the edit or re-sync to reconcile);
+- `undefined` — the confirmation re-sync itself failed.
+
+```bash
+# Log a completed workout (opt-in write); --exercise is repeatable
+strong workout log "Push Day" --write \
+  --exercise ex-1:10@60,8@70~8 --exercise ex-2:12@40 [--template <template-id>]
+
+# Soft-delete a logged workout
+strong workout delete <workout-id> --write
+
+# Edit a set by 0-based position (INFERRED shape; reports serverConfirmed)
+strong workout edit <workout-id> --set 0:1 --reps 8 --weight 70 --rpe 8 --write
+```
+
+Set indices are 0-based **working sets** per exercise group (rest-timer rows
+are skipped): `--set 0:1` targets the second working set of the first
+exercise. Bad group/set indices, or editing a field the set has no cell for,
+fail with a clean error before any PUT.
+
 ### Stats & export
 
 ```bash

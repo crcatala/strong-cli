@@ -16,16 +16,9 @@
 
 import type { WeightUnit } from '../lib/units.js'
 import { weightToKg } from '../lib/units.js'
+import { WEIGHT_CELL_TYPES } from './edit.js'
 import { type Clock, newId } from './ids.js'
 import type { Entity, Snapshot } from './types.js'
-
-const WEIGHT_CELL_TYPES = new Set([
-  'OTHER_WEIGHT',
-  'DUMBBELL_WEIGHT',
-  'BARBELL_WEIGHT',
-  'WEIGHTED_BODYWEIGHT',
-  'PLATE_WEIGHT',
-])
 
 /** Minimal shape of an exercise definition's cellTypeConfigs (from the snapshot). */
 interface CellTypeConfigLike {

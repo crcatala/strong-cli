@@ -60,6 +60,7 @@ ${ctx.colors.section('Examples')}
 ${formatExample('strong auth login', 'Authenticate with your Strong account')}
 ${formatExample('strong workouts', 'List recent workouts')}
 ${formatExample('strong workout <id>', 'Show a single workout in detail')}
+${formatExample('strong workout log "Push Day" --write --exercise <id>:10@60', 'Log a completed workout (opt-in write)')}
 ${formatExample('strong exercises --search squat', 'Search the exercise library')}
 ${formatExample('strong exercises create "Hack Squat" --write --cell-type REPS,RPE', 'Create a custom exercise (opt-in write)')}
 ${formatExample('strong templates', 'List routine templates')}
