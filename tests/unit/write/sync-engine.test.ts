@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -72,6 +72,33 @@ describe('SyncEngine', () => {
     const stored = loadSnapshot('user-1', snapshotPath())
     expect(stored).not.toBeNull()
     expect(Object.keys(stored?.entities.log ?? {})).toEqual(['log-1', 'log-2'])
+  })
+
+  it('treats a parseable snapshot missing collection maps as a cache miss', async () => {
+    // A partial snapshot would otherwise load, then throw when applyPage tries
+    // to merge the first entity into its absent collection map.
+    writeFileSync(
+      snapshotPath(),
+      JSON.stringify({
+        version: 1,
+        userId: 'user-1',
+        continuation: 'STALE',
+        syncedAt: null,
+        preferences: {},
+        entities: {},
+      }),
+    )
+    const fetchImpl = async () => logPage([syntheticLog({ id: 'log-fresh' })])
+    const engine = new SyncEngine({
+      client: makeClient(fetchImpl),
+      userId: 'user-1',
+      snapshotPath: snapshotPath(),
+    })
+
+    const snapshot = await engine.sync()
+
+    expect(snapshot.entities.log['log-fresh']?.id).toBe('log-fresh')
+    expect(loadSnapshot('user-1', snapshotPath())?.entities.log['log-fresh']?.id).toBe('log-fresh')
   })
 
   it('delta sync merges new entities over the stored snapshot and keeps the rest', async () => {

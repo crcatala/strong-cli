@@ -47,11 +47,23 @@ export function loadSnapshot(userId: string, path = getSnapshotFilePath()): Stor
   if (!existsSync(path)) return null
   try {
     const raw = JSON.parse(readFileSync(path, 'utf-8')) as StoredSnapshot
-    if (raw.version !== SNAPSHOT_VERSION || raw.userId !== userId || !raw.entities) return null
+    if (raw.version !== SNAPSHOT_VERSION || raw.userId !== userId || !hasEntityMaps(raw.entities)) {
+      return null
+    }
     return raw
   } catch {
     return null
   }
+}
+
+/** Verify every collection map exists before trusting a parseable snapshot. */
+function hasEntityMaps(entities: unknown): entities is Record<CollectionName, EntityMap> {
+  if (!entities || typeof entities !== 'object' || Array.isArray(entities)) return false
+  const maps = entities as Record<string, unknown>
+  return COLLECTIONS.every((collection) => {
+    const map = maps[collection]
+    return map !== null && typeof map === 'object' && !Array.isArray(map)
+  })
 }
 
 /** Persist the snapshot atomically (tmp file + rename, 0600). */
