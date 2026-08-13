@@ -11,7 +11,7 @@ tags: [units, cli, feature]
 ---
 # feat: --unit override flag for display formatting
 
-PLAN.md Future work (unit conversions are done; this is the remaining nicety). The API stores canonical metric values (kg, m) and the CLI converts to the account weightUnit/distanceUnit prefs for display (src/lib/units.ts, used by src/commands/workouts.ts, workout.ts, stats.ts). Add a --unit flag to format output in a chosen unit regardless of account prefs. JSON output must keep raw canonical values untouched.
+Unit-conversion follow-up (unit conversions are done; this is the remaining nicety). The API stores canonical metric values (kg, m) and the CLI converts to the account weightUnit/distanceUnit prefs for display (src/lib/units.ts, used by src/commands/workouts.ts, workout.ts, stats.ts). Add a --unit flag to format output in a chosen unit regardless of account prefs. JSON output must keep raw canonical values untouched.
 
 ## Design
 

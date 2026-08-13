@@ -53,12 +53,12 @@ backend regardless of runner.
 
 ```bash
 # interactive (stored in OS keyring by default)
-npx tsx src/cli.ts auth login
+strong auth login
 
 # headless/CI: env vars (password never via flags)
 export STRONG_USERNAME="your@email.com"
 export STRONG_PASSWORD="your-password"
-npx tsx src/cli.ts auth login --use-config   # session → ~/.config/strong-cli/session.json
+strong auth login --use-config   # session → ~/.config/strong-cli/session.json
 ```
 
 Or inject an existing session via env vars (bypasses login):

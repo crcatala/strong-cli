@@ -11,7 +11,7 @@ tags: [api, resilience, tech-debt]
 ---
 # api: hardcoded 5xx backoff and non-retryable 429 soft rate limits
 
-PLAN.md backlog P3. src/api/client.ts authedRequest() retries 5xx with a hardcoded 250/500ms schedule (attempt < 2, sleep(250 * attempt)) and treats 429 (the documented soft rate limit that can also surface as 401 with body Something went wrong. Please try again later.) as a terminal failure. If soft limits are hit in practice, repeat runs waste the user's quota and degrade UX.
+Retry-policy backlog (P3). src/api/client.ts authedRequest() retries 5xx with a hardcoded 250/500ms schedule (attempt < 2, sleep(250 * attempt)) and treats 429 (the documented soft rate limit that can also surface as 401 with body Something went wrong. Please try again later.) as a terminal failure. If soft limits are hit in practice, repeat runs waste the user's quota and degrade UX.
 
 ## Design
 

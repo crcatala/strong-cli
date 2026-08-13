@@ -17,7 +17,7 @@ Goal: add opt-in write support to the read-only CLI by porting the envelope-PUT 
 
 Scope (children): foundation snapshot+write engine, then templates CRUD, workout writes (log/delete/edit sets), custom-exercise CRUD, body measurements (read+write).
 
-Posture (carried over from PLAN.md future-work sketch): writes live behind an explicit opt-in flag/subcommand; defaults remain read-only; every live test runs against a DISPOSABLE test account, NEVER the main account; help text and README document the ToS/risk warning.
+Posture (carried over from the prior future-work plan): writes live behind an explicit opt-in flag/subcommand; defaults remain read-only; every live test runs against a DISPOSABLE test account, NEVER the main account; help text and README document the ToS/risk warning.
 
 ## Design
 
