@@ -9,6 +9,7 @@ import {
   resolveWeightUnit,
   weightLabel,
   weightToDisplay,
+  weightToKg,
 } from '../../src/lib/units.js'
 import { formatVolume } from '../../src/transform/workouts.js'
 
@@ -88,6 +89,12 @@ describe('display formatting', () => {
     expect(fmtNumber(6.2)).toBe('6.2')
     expect(fmtNumber(2.253512)).toBe('2.25')
     expect(fmtNumber(1.9999)).toBe('2')
+  })
+
+  it('converts display-unit weights back to canonical kg (write path)', () => {
+    expect(weightToKg(50, 'POUNDS')).toBeCloseTo(22.6796185, 5) // 50 lb
+    expect(weightToKg(100, 'POUNDS')).toBeCloseTo(45.359237, 5)
+    expect(weightToKg(80, 'KILOGRAMS')).toBe(80) // passthrough
   })
 
   it('converts volume (kg·reps) into the display unit', () => {

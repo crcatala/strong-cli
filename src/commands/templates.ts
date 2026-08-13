@@ -38,10 +38,9 @@ Examples:
       if (!session) throw new AuthError('Not authenticated — run `strong auth login` first')
 
       logVerbose(ctx, 'Fetching templates...')
-      // TODO: getTemplates fetches a single page only — if the API paginates
-      // templates (likely, given the HAL _links.next pattern on every other
-      // collection), users with many templates will see a truncated list.
-      // Add a walkTemplates loop when confirmed live (tracked in sc-sfn8).
+      // Pagination: getTemplates walks the user doc (`include=template`) with
+      // the same continuation-cursor loop as logs — no truncation for accounts
+      // with many templates (fixes the old single-page gap, sc-sfn8).
       let templates = await client.getTemplates(session.userId)
 
       if (options.search) {

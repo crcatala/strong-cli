@@ -49,6 +49,15 @@ export function userUrl(
   return url.toString()
 }
 
+/**
+ * Write-path URL for the user doc (envelope PUT). No query params — the
+ * write protocol is a whole-document sync, and the GET-only `continuation`
+ * param is meaningless here (verified against strong-mcp).
+ */
+export function userWriteUrl(base: string, userId: string): string {
+  return `${base}/api/users/${userId}`
+}
+
 export function measurementsUrl(base: string, page: number): string {
   const url = new URL(`${base}/api/measurements`)
   url.searchParams.set('page', String(page))

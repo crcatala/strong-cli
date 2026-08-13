@@ -65,6 +65,11 @@ export function weightToDisplay(kg: number, unit: WeightUnit): number {
   return unit === 'KILOGRAMS' ? kg : kg * LB_PER_KG
 }
 
+/** Convert a display-unit weight into the canonical kg value (write path). */
+export function weightToKg(display: number, unit: WeightUnit): number {
+  return unit === 'KILOGRAMS' ? display : display / LB_PER_KG
+}
+
 /** Convert a raw meter value into the display unit. */
 export function distanceToDisplay(meters: number, unit: DistanceUnit): number {
   if (unit === 'KILOMETERS') return meters / M_PER_KM

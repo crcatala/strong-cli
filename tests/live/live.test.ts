@@ -8,10 +8,15 @@
  *   RUN_LIVE_TESTS=1 STRONG_USERNAME=you@example.com STRONG_PASSWORD=... \
  *     npx vitest run tests/live --no-file-parallelism
  */
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { StrongClient } from '../../src/api/client.js'
 import type { RawLog } from '../../src/api/types.js'
 import { AuthError } from '../../src/cli/errors.js'
+import { buildEnvelope } from '../../src/write/envelope.js'
+import { SyncEngine } from '../../src/write/sync-engine.js'
+import { COLLECTIONS, type CollectionName, type Snapshot } from '../../src/write/types.js'
 import { memStore } from './mem-store.js'
 
 const RUN_LIVE = process.env['RUN_LIVE_TESTS'] === '1'
@@ -114,4 +119,46 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
     const ids = logs.map((l) => l.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
+
+  it('walks the full snapshot and round-trips an empty envelope PUT (disposable account only)', async () => {
+    const username = process.env['STRONG_USERNAME'] ?? process.env['STRONG_USER']
+    const password = process.env['STRONG_PASSWORD']
+    if (!username || !password) {
+      console.warn('  (skipped: STRONG_USERNAME/STRONG_PASSWORD not set)')
+      return
+    }
+
+    const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+    const session = await client2.login(username, password)
+
+    // Per-run temp snapshot path — never touches the real config dir.
+    const snapshotPath = join(tmpdir(), `strong-live-snapshot-${Date.now()}.json`)
+    const engine = new SyncEngine({ client: client2, userId: session.userId, snapshotPath })
+
+    // Full 8-collection walk against the live backend.
+    const snapshot = await engine.sync()
+    for (const collection of COLLECTIONS) {
+      expect(snapshot.entities[collection]).toBeDefined()
+    }
+
+    // getTemplates must agree with the snapshot's template collection —
+    // both walk the user doc paginated (sc-sfn8 fix).
+    const templates = await client2.getTemplates(session.userId)
+    expect(templates.map((t) => t.id).sort()).toEqual(
+      Object.keys(snapshot.entities.template).sort(),
+    )
+
+    // Envelope PUT round-trip: an empty envelope (no changes) must be accepted
+    // and must NOT mutate server truth — the backend merges by id rather than
+    // replacing collections (verified protocol semantics from strong-mcp).
+    await client2.putEnvelope(session.userId, buildEnvelope(session.userId, []))
+    const after = await engine.resync()
+    for (const collection of COLLECTIONS) {
+      expect(entityCount(after, collection)).toBe(entityCount(snapshot, collection))
+    }
+  }, 180_000)
 })
+
+function entityCount(snapshot: Snapshot, collection: CollectionName): number {
+  return Object.keys(snapshot.entities[collection]).length
+}
