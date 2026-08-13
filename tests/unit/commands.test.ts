@@ -287,7 +287,8 @@ describe('templates command', () => {
   function templatesFetch() {
     return createFetchMock([
       {
-        match: (url) => url.includes('/templates'),
+        // getTemplates walks the user doc with include=template (paginated).
+        match: (url) => url.includes('include=template'),
         handler: () =>
           mockResponse({
             _embedded: {

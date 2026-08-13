@@ -8,8 +8,8 @@ import {
   STRONG_BACKEND_DEFAULT,
   userLogUrl,
   userMeasurementsUrl,
-  userTemplatesUrl,
   userUrl,
+  userWriteUrl,
 } from './endpoints.js'
 import { TokenManager, type TokenState, type TokenStore } from './token-manager.js'
 import type {
@@ -91,6 +91,33 @@ export interface PaginationOptions {
  */
 export interface LogsWalk {
   logs: RawLog[]
+  /** Token to resume the next walk from; `''` = start from the first page. */
+  lastNextContinuation: string
+  /** True when the walk reached the end of the stream (no more `next` links). */
+  finalized: boolean
+}
+
+/** Options for a generic user-doc page walk (see {@link StrongClient.walkUserPages}). */
+export interface UserPageWalkOptions {
+  /** Embedded collections to fetch per page (e.g. `['log']`, `['template']`). */
+  includes?: string[]
+  /** Resume token; `''`/omitted = start from the first page. */
+  continuation?: string
+  /** Per-page size (default 200). */
+  limit?: number
+  /** Override the per-walk page cap (default {@link DEFAULT_MAX_PAGES}). */
+  maxPages?: number
+  /** Override the inter-page delay in ms (default {@link DEFAULT_PAGE_DELAY_MS}). */
+  pageDelayMs?: number
+}
+
+/**
+ * Result of a generic user-doc walk (see {@link StrongClient.walkUserPages}).
+ * `lastNextContinuation` semantics match {@link LogsWalk}.
+ */
+export interface UserPagesWalk {
+  /** Every fetched page, in order. */
+  pages: UserResponse[]
   /** Token to resume the next walk from; `''` = start from the first page. */
   lastNextContinuation: string
   /** True when the walk reached the end of the stream (no more `next` links). */
@@ -347,10 +374,29 @@ export class StrongClient {
     userId: string,
     walk: { limit?: number; continuation?: string; maxPages?: number; pageDelayMs?: number } = {},
   ): Promise<LogsWalk> {
+    const { pages, lastNextContinuation, finalized } = await this.walkUserPages(userId, {
+      includes: ['log'],
+      ...walk,
+    })
+    const logs = pages.flatMap((p) => p._embedded?.log ?? [])
+    return { logs, lastNextContinuation, finalized }
+  }
+
+  /**
+   * Generic user-doc walk: fetch `includes` collections page by page, following
+   * `_links.next` continuation pagination (shared implementation behind
+   * {@link walkLogs} and {@link getTemplates}).
+   *
+   * Same safety guards as {@link walkLogs}: page cap, self-referencing-loop
+   * detection, and inter-page pacing. A page counts as exhausted when it
+   * carries no entities in any of the requested collections.
+   */
+  async walkUserPages(userId: string, walk: UserPageWalkOptions = {}): Promise<UserPagesWalk> {
+    const includes = walk.includes ?? []
     const limit = walk.limit ?? 200
     const maxPages = walk.maxPages ?? DEFAULT_MAX_PAGES
     const pageDelayMs = walk.pageDelayMs ?? DEFAULT_PAGE_DELAY_MS
-    const logs: RawLog[] = []
+    const pages: UserResponse[] = []
     const seenContinuations = new Set<string>()
     let continuation = walk.continuation ?? ''
     let lastNextContinuation = ''
@@ -358,21 +404,21 @@ export class StrongClient {
     for (let page = 0; ; page++) {
       if (page >= maxPages) {
         throw new ApiError(
-          `getAllLogs hit the ${maxPages}-page safety cap — aborting instead of following more pagination ` +
-            'links (raise maxPages if this is a real, enormous history)',
+          `Paginated user-doc walk hit the ${maxPages}-page safety cap — aborting instead of following ` +
+            'more pagination links (raise maxPages if this is a real, enormous history)',
         )
       }
-      const user = await this.getUser(userId, {
-        limit,
-        continuation,
-        includes: ['log'],
-      })
-      const batch = user._embedded?.log ?? []
-      logs.push(...batch)
+      const user = await this.getUser(userId, { limit, continuation, includes })
+      pages.push(user)
 
       const next = user._links?.next
-      if (!next || typeof next !== 'object' || !('href' in next) || batch.length === 0) {
-        // End of stream: nothing more to follow (empty batches are treated as
+      if (
+        !next ||
+        typeof next !== 'object' ||
+        !('href' in next) ||
+        pageHasNoEntities(user, includes)
+      ) {
+        // End of stream: nothing more to follow (empty pages are treated as
         // exhaustion — resuming re-fetches them idempotently).
         finalized = true
         break
@@ -386,7 +432,7 @@ export class StrongClient {
       }
       if (seenContinuations.has(nextContinuation)) {
         throw new ApiError(
-          `Pagination loop detected in getAllLogs: continuation token repeated after ${page + 1} ` +
+          `Pagination loop detected in user-doc walk: continuation token repeated after ${page + 1} ` +
             'page(s) — refusing to keep following a self-referencing next link',
         )
       }
@@ -395,7 +441,7 @@ export class StrongClient {
       continuation = nextContinuation
       if (pageDelayMs > 0) await sleep(pageDelayMs)
     }
-    return { logs, lastNextContinuation, finalized }
+    return { pages, lastNextContinuation, finalized }
   }
 
   async getUserMeasurements(userId: string): Promise<MeasurementsResponse> {
@@ -405,12 +451,15 @@ export class StrongClient {
     )
   }
 
-  async getTemplates(userId: string): Promise<Template[]> {
-    const data = await this.authedRequest<{ _embedded?: { template?: Template[] } }>(
-      'GET',
-      userTemplatesUrl(this.baseUrl, userId),
-    )
-    return data._embedded?.template ?? []
+  /**
+   * Routine templates, following `_links.next` continuation pagination via the
+   * user doc (`include=template` — same verified pattern as tags/folders).
+   * Fixes the old single-page fetch (sc-sfn8): accounts with many templates
+   * no longer see a truncated list.
+   */
+  async getTemplates(userId: string, opts: PaginationOptions = {}): Promise<Template[]> {
+    const { pages } = await this.walkUserPages(userId, { includes: ['template'], ...opts })
+    return pages.flatMap((p) => p._embedded?.template ?? [])
   }
 
   /**
@@ -445,6 +494,30 @@ export class StrongClient {
   async getLog(userId: string, logId: string): Promise<RawLog> {
     return this.authedRequest<RawLog>('GET', userLogUrl(this.baseUrl, userId, logId))
   }
+
+  /**
+   * Write path — PUT a change envelope to the user doc (docs/api-inventory.md).
+   *
+   * The envelope carries only the changed entities ({id, strongAnalytics:false,
+   * _embedded: {<collection>: [changed entities]}}); unchanged collections are
+   * sent as empty arrays. This is the client's only mutation method — callers
+   * opt in explicitly; the default posture of this library stays read-only.
+   */
+  async putEnvelope(
+    userId: string,
+    envelope: { id: string; strongAnalytics: false; _embedded: Record<string, unknown[]> },
+  ): Promise<void> {
+    await this.authedRequest('PUT', userWriteUrl(this.baseUrl, userId), envelope)
+  }
+}
+
+/** True when none of the requested collections carried entities on this page. */
+function pageHasNoEntities(user: UserResponse, includes: string[]): boolean {
+  const embedded = user._embedded ?? {}
+  return includes.every((collection) => {
+    const entities = embedded[collection]
+    return !Array.isArray(entities) || entities.length === 0
+  })
 }
 
 /** Compact, JSON-safe preview of a response body for error messages. */

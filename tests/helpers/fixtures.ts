@@ -9,6 +9,7 @@
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import type { TokenState, TokenStore } from '../../src/api/token-manager.js'
 import type { LoginResponse, RawLog, UserResponse } from '../../src/api/types.js'
 
 export function loadCapturedMeasurements(): {
@@ -54,6 +55,21 @@ export function fakeLoginResponse(overrides: Partial<LoginResponse> = {}): Login
     expiresIn: 1200,
     userId: 'test-user-123',
     ...overrides,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Token store helper
+// ---------------------------------------------------------------------------
+
+/** In-memory TokenStore for tests (mirrors tests/live/mem-store.ts). */
+export function memStore(initial: TokenState | null = null): TokenStore {
+  let state = initial
+  return {
+    read: async () => state,
+    write: async (s: TokenState) => {
+      state = s
+    },
   }
 }
 

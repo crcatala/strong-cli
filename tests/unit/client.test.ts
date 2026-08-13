@@ -413,4 +413,61 @@ describe('StrongClient', () => {
     const client = makeClient(store, fetchImpl)
     await expect(client.getUser('user-1')).rejects.toThrow(/continuation parameter is required/)
   })
+
+  it('PUTs a change envelope to the user doc with auth (write path)', async () => {
+    const store = memStore({
+      accessToken: futureJwt(1200, 'user-1'),
+      refreshToken: 'rt',
+      userId: 'user-1',
+      expiresAt: Date.now() + 1200_000,
+    })
+    const envelope = {
+      id: 'user-1',
+      strongAnalytics: false,
+      _embedded: { template: [{ id: 'tpl-1', name: { custom: 'Push Day' } }] },
+    }
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 204 }))
+    const client = makeClient(store, fetchImpl)
+
+    await client.putEnvelope('user-1', envelope)
+
+    const [url, init] = fetchImpl.mock.calls[0]
+    expect(String(url)).toBe('https://back.strong.app/api/users/user-1')
+    expect(init?.method).toBe('PUT')
+    const headers = new Headers(init?.headers)
+    expect(headers.get('authorization')).toMatch(/^Bearer /)
+    expect(JSON.parse(String(init?.body))).toEqual(envelope)
+  })
+
+  it('paginates getTemplates across the user doc following _links.next', async () => {
+    const store = memStore({
+      accessToken: futureJwt(1200, 'user-1'),
+      refreshToken: 'rt',
+      userId: 'user-1',
+      expiresAt: Date.now() + 1200_000,
+    })
+    const page1 = {
+      id: 'user-1',
+      _links: { next: { href: '/api/users/user-1?include=template&continuation=TPL2&limit=200' } },
+      _embedded: { template: [{ id: 'tpl-1', name: { en: 'Push Day' } }] },
+    }
+    const page2 = {
+      id: 'user-1',
+      _embedded: { template: [{ id: 'tpl-2', name: { en: 'Pull Day' } }] },
+    }
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('continuation=TPL2')) return mockResponse(page2)
+      return mockResponse(page1)
+    })
+    const client = makeClient(store, fetchImpl)
+
+    const templates = await client.getTemplates('user-1', { pageDelayMs: 0 })
+
+    // Multi-page merge — the old single-page fetch (sc-sfn8) would return only tpl-1.
+    expect(templates.map((t) => t.id)).toEqual(['tpl-1', 'tpl-2'])
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    // First page request carries the (empty) continuation param like every walk.
+    expect(String(fetchImpl.mock.calls[0][0])).toContain('continuation=')
+  })
 })

@@ -1,6 +1,6 @@
 ---
 id: sc-m3xf
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-08-13T00:16:39Z
@@ -35,3 +35,9 @@ Testing policy: unit tests with fetch-mock (see tests/unit/); live-gated tests (
 
 putEnvelope exists on StrongClient and reuses auth/retry machinery. Snapshot refresh walks ALL 8 collections with continuation pagination (fixing the sc-sfn8 single-page gap for templates). WriteEngine serializes writes, refreshes before each write, applies changes idempotently by id, persists the merged snapshot only after a 2xx. softDelete cascade covered by unit tests. All existing read commands and tests unchanged and passing. Live test (disposable account): refresh snapshot -> PUT one minimal envelope -> re-sync shows the change -> cleanup.
 
+
+## Notes
+
+**2026-08-13T00:29:01Z**
+
+Implemented: src/write/ (types, ids, envelope, soft-delete, snapshot, snapshot-store, sync-engine, write-engine); client gains putEnvelope + generic walkUserPages (walkLogs delegates); getTemplates now paginates via user doc (sc-sfn8 fixed); weightToKg added. 21 new unit tests (158 total pass), lint + build + package smoke green. NOTE: live round-trip test added (tests/live) but NOT executed — requires RUN_LIVE_TESTS=1 with a disposable account; unit suite covers the engine/snapshot/soft-delete behavior.
