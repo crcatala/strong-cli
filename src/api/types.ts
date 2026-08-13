@@ -68,6 +68,7 @@ export interface Measurement {
   media?: unknown[]
   cellTypeConfigs?: { cellType: string; mandatory?: boolean }[]
   isGlobal?: boolean
+  isHidden?: boolean
   measurementType?: string
   created?: string
   lastChanged?: string

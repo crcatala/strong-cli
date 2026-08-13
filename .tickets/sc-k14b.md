@@ -1,6 +1,6 @@
 ---
 id: sc-k14b
-status: open
+status: in_progress
 deps: [sc-m3xf]
 links: []
 created: 2026-08-13T00:16:39Z
@@ -30,3 +30,9 @@ CLI shape (agent picks, consistent): e.g. strong exercises create <name> --cell-
 
 Created custom exercise is resolvable by id from the snapshot and usable when creating templates/workouts. Rename updates the name. Archive hides it from reads and it no longer resolves for new writes. Created defs appear under user measurements read. Live test on disposable account: create -> rename -> archive -> verify each step.
 
+
+## Notes
+
+**2026-08-13T01:10:46Z**
+
+Implemented: strong exercises create|rename|archive with --write opt-in gating (sc-k14b). Ports from strong-mcp (MIT): buildExerciseDefinition (src/write/entity-builders.ts), editEntityName (src/write/edit.ts), ExerciseWriteService (src/write/write-service.ts) wired through the sc-m3xf write engine (delta-sync refresh -> envelope PUT -> optimistic merge -> persist). CLI: exercises.ts restructured to parent list + subcommands; help documents ToS/risk warning + disposable-account policy; README/CHANGELOG/PLAN updated. Tests: 22 new unit tests (builders/edit/service/CLI incl. opt-in gating, cell-type validation, unknown-id errors); live write-flow test (create->rename->archive, verified at each step) gated by RUN_LIVE_WRITE_TESTS=1 + STRONG_DISPOSABLE_USER_ID. lint/build/coverage/package smoke green.

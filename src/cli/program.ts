@@ -46,7 +46,7 @@ export function createProgram(ctx: CliContext): Command {
     'beforeAll',
     () =>
       `${ctx.colors.banner('strong')} ${ctx.colors.muted(`v${VERSION}`)} — ${ctx.colors.muted(
-        'Unofficial CLI for Strong Workout Tracker (read-only spike)',
+        'Unofficial CLI for Strong Workout Tracker (read-only by default; opt-in writes)',
       )}\n`,
   )
 
@@ -61,6 +61,7 @@ ${formatExample('strong auth login', 'Authenticate with your Strong account')}
 ${formatExample('strong workouts', 'List recent workouts')}
 ${formatExample('strong workout <id>', 'Show a single workout in detail')}
 ${formatExample('strong exercises --search squat', 'Search the exercise library')}
+${formatExample('strong exercises create "Hack Squat" --write --cell-type REPS,RPE', 'Create a custom exercise (opt-in write)')}
 ${formatExample('strong templates', 'List routine templates')}
 ${formatExample('strong folders', 'List template folders')}
 ${formatExample('strong tags', 'List exercise tags')}

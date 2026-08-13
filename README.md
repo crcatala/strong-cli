@@ -4,13 +4,16 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/crcatala/strong-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/crcatala/strong-cli/actions/workflows/ci.yml)
 
-Unofficial read-only CLI for [Strong Workout Tracker](https://www.strong.app/), built
-for personal-productivity/AI-agent use. Reverse-engineered from the app's backend
+Unofficial CLI for [Strong Workout Tracker](https://www.strong.app/), built
+for personal-productivity/AI-agent use. Read-only by default, with opt-in
+write commands (see [Writing](#writing-opt-in)). Reverse-engineered from the
+app's backend
 (`https://back.strong.app`) — **no official API exists**, so this is built on
 community-reverse-engineered endpoints. Use at your own risk.
 
 > ⚠️ **Caution**: This is an unofficial client for an undocumented API. Use it
-> read-only, at low frequency, for your own data. See
+> read-only (or with the explicit `--write` opt-in, and only on a **disposable
+> test account**), at low frequency, for your own data. See
 > [docs/auth-findings.md#risks](docs/auth-findings.md#risks).
 
 ## Setup
@@ -149,6 +152,39 @@ strong exercises --search squat
 strong exercises --user              # + your custom exercises (needs auth)
 ```
 
+## Writing (opt-in)
+
+> ⚠️ **Warning**: writes are experimental and target an undocumented,
+> community-reverse-engineered API. They can risk **account termination**
+> (ToS gray zone). Every write subcommand requires the explicit `--write`
+> flag as an acknowledgment. **Only use writes on a disposable test account,
+> never your main account.**
+
+Custom exercise definitions are **your** data (the user doc's `measurement`
+collection) — distinct from the public global library browsed by
+`strong exercises`. They can be referenced by id when creating templates or
+workouts. All three shapes (create/rename/archive) were captured from real app
+traffic, so no post-write verification loop is needed.
+
+```bash
+# Create a custom exercise (opt-in write)
+strong exercises create "Hack Squat" --write --cell-type REPS,RPE \
+  --mandatory REPS --exponent RPE --notes "deep hack squat" --tag <tag-id>
+
+# Rename / archive (soft-delete) an existing custom exercise
+strong exercises rename <exercise-id> "Hack Squat" --write
+strong exercises archive <exercise-id> --write
+```
+
+Valid `--cell-type` values: `REPS`, `RPE`, `OTHER_WEIGHT`, `BARBELL_WEIGHT`,
+`DUMBBELL_WEIGHT`, `WEIGHTED_BODYWEIGHT`, `PLATE_WEIGHT`, `DISTANCE`,
+`DURATION`, `REST_TIMER`, `NOTE`. `--mandatory`/`--exponent` must be subsets
+of `--cell-type`.
+
+Live-test policy: mutation tests are gated behind both `RUN_LIVE_TESTS=1`
+**and** `RUN_LIVE_WRITE_TESTS=1`, and refuse to run unless the logged-in user
+matches `STRONG_DISPOSABLE_USER_ID` (see [Tests](#tests)).
+
 ### Stats & export
 
 ```bash
@@ -184,6 +220,7 @@ strong export --json | jq .totals
 | `STRONG_RETRY_BACKOFF_MS` | Base retry backoff in ms, jittered per attempt (default 250) |
 | `STRONG_FULL_SYNC_INTERVAL_DAYS` | Days between automatic full cache re-syncs (default 30) |
 | `STRONG_FORMAT` | Default output format |
+| `STRONG_DISPOSABLE_USER_ID` | Guard for write live tests — refuse mutations unless the logged-in user matches |
 | `NO_COLOR` | Disable colors |
 
 ## Documentation & sources
@@ -201,7 +238,10 @@ strong export --json | jq .totals
 ## Tests
 
 ```bash
-npm test                          # 137 unit tests, mocked fetch
+npm test                          # unit tests, mocked fetch
 RUN_LIVE_TESTS=1 STRONG_USERNAME=... STRONG_PASSWORD=... \
   npm run test:live               # real API (public + your account)
+# + write tests against a DISPOSABLE account (never your main account):
+RUN_LIVE_TESTS=1 RUN_LIVE_WRITE_TESTS=1 STRONG_DISPOSABLE_USER_ID=... \
+  npm run test:live
 ```
