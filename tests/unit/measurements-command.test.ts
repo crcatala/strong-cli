@@ -5,6 +5,7 @@ import { createFetchMock, futureJwt, mockResponse } from '../helpers/fixtures.js
 
 function env(xdg: string): Record<string, string | undefined> {
   return {
+    STRONG_DISABLE_KEYRING: '1',
     XDG_CONFIG_HOME: xdg,
     STRONG_ACCESS_TOKEN: futureJwt(3600, 'user-1'),
     STRONG_REFRESH_TOKEN: 'rt-1',

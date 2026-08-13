@@ -44,7 +44,12 @@ function harness(env: Record<string, string | undefined>) {
     out,
     err,
     run: (argv: string[], fetchImpl?: typeof fetch) =>
-      runCli(argv, { env, stdout, stderr, fetch: fetchImpl }),
+      runCli(argv, {
+        env: { STRONG_DISABLE_KEYRING: '1', ...env },
+        stdout,
+        stderr,
+        fetch: fetchImpl,
+      }),
   }
 }
 

@@ -206,6 +206,14 @@ describe('keyring store (default auth path)', () => {
     expect(await sessionStore.read()).toBeNull()
   })
 
+  it('skips the keyring when explicitly disabled', async () => {
+    setEnv({ ...withSessionBus(), STRONG_DISABLE_KEYRING: '1' })
+    expect(await sessionStore.read()).toBeNull()
+    await expect(sessionStore.write(state())).rejects.toThrow(/No system keyring available/)
+    expect(keyringMock.getPassword).not.toHaveBeenCalled()
+    expect(keyringMock.setPassword).not.toHaveBeenCalled()
+  })
+
   it.skipIf(process.platform !== 'linux')(
     'headless Linux without a session bus falls back and refuses to write',
     async () => {
