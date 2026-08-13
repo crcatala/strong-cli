@@ -86,4 +86,36 @@ describe('measurements command', () => {
     ).rejects.toThrow(/Unknown measurement type/)
     resetEnv()
   })
+
+  it('requires --write before validating credentials or making a request', async () => {
+    const h = harness('/tmp/strong-cli-measurements-command-no-write')
+    const fetchImpl = async () => {
+      throw new Error('fetch must not be called')
+    }
+    await expect(
+      runCli(['measurements', 'add', 'WEIGHT', '180'], {
+        env: env('/tmp/strong-cli-measurements-command-no-write'),
+        stdout: h.stdout,
+        stderr: h.stderr,
+        fetch: fetchImpl,
+      }),
+    ).rejects.toThrow(/writes are opt-in/)
+    resetEnv()
+  })
+
+  it.each([
+    ['-1', /Invalid measurement value/],
+    ['not-a-number', /Invalid measurement value/],
+  ])('rejects invalid value %s before writing', async (value, message) => {
+    const h = harness('/tmp/strong-cli-measurements-command-invalid-value')
+    await expect(
+      runCli(['measurements', 'add', 'WEIGHT', value, '--write'], {
+        env: env('/tmp/strong-cli-measurements-command-invalid-value'),
+        stdout: h.stdout,
+        stderr: h.stderr,
+        fetch: async () => mockResponse({}),
+      }),
+    ).rejects.toThrow(message)
+    resetEnv()
+  })
 })

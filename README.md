@@ -343,7 +343,9 @@ strong export --json | jq .totals
 ```bash
 npm test                          # unit tests, mocked fetch
 RUN_LIVE_TESTS=1 STRONG_USERNAME=... STRONG_PASSWORD=... \
-  npm run test:live               # real API (public + your account)
+  npm run test:live               # real API + CLI smoke tests
+# Live requests are serialized and delayed 300ms by default; override with
+# STRONG_LIVE_DELAY_MS when troubleshooting rate limits.
 # + write tests against a DISPOSABLE account (never your main account):
 RUN_LIVE_TESTS=1 RUN_LIVE_WRITE_TESTS=1 STRONG_DISPOSABLE_USER_ID=... \
   npm run test:live
