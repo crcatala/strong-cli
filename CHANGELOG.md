@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Opt-in write commands for routine templates (sc-ho9c):
+  `strong templates create <name> --write --exercise <id>:<sets> [--folder <id>]`,
+  `strong templates rename <id> <name> --write`, and
+  `strong templates delete <id> --write`. Writes are gated behind the explicit
+  `--write` flag (ToS/risk acknowledgment); defaults remain read-only.
+  - Write-layer ports from strong-mcp (MIT): `buildLog` (`src/write/log-builder.ts`,
+    TEMPLATE kind — cellSetGroup derived from each exercise's `cellTypeConfigs`
+    with a trailing REST_TIMER set, weights written canonically in kg) and
+    folder bookkeeping (`src/write/folders.ts` — default "My Templates" folder,
+    `_links.template` add/remove). `TemplateWriteService`
+    (`src/write/write-service.ts`) wires create/rename/delete through the
+    serialized snapshot refresh -> envelope PUT -> optimistic merge -> persist
+    engine (sc-m3xf foundation). Delete soft-deletes the template and unlinks
+    it from its folder.
+  - Live mutation test (create -> rename -> delete -> verify each step,
+    including folder link/unlink) gated behind `RUN_LIVE_TESTS=1` +
+    `RUN_LIVE_WRITE_TESTS=1` + matching `STRONG_DISPOSABLE_USER_ID` — writes
+    only ever touch a disposable account.
+
+### Added
+
 - Opt-in write commands for custom exercise definitions (sc-k14b):
   `strong exercises create <name> --write --cell-type <types> [--mandatory]
   [--exponent] [--notes] [--tag]`, `strong exercises rename <id> <name> --write`,

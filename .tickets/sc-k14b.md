@@ -1,6 +1,6 @@
 ---
 id: sc-k14b
-status: in_progress
+status: closed
 deps: [sc-m3xf]
 links: []
 created: 2026-08-13T00:16:39Z
@@ -36,3 +36,7 @@ Created custom exercise is resolvable by id from the snapshot and usable when cr
 **2026-08-13T01:10:46Z**
 
 Implemented: strong exercises create|rename|archive with --write opt-in gating (sc-k14b). Ports from strong-mcp (MIT): buildExerciseDefinition (src/write/entity-builders.ts), editEntityName (src/write/edit.ts), ExerciseWriteService (src/write/write-service.ts) wired through the sc-m3xf write engine (delta-sync refresh -> envelope PUT -> optimistic merge -> persist). CLI: exercises.ts restructured to parent list + subcommands; help documents ToS/risk warning + disposable-account policy; README/CHANGELOG/PLAN updated. Tests: 22 new unit tests (builders/edit/service/CLI incl. opt-in gating, cell-type validation, unknown-id errors); live write-flow test (create->rename->archive, verified at each step) gated by RUN_LIVE_WRITE_TESTS=1 + STRONG_DISPOSABLE_USER_ID. lint/build/coverage/package smoke green.
+
+**2026-08-13T04:01:20Z**
+
+Closing: implementation merged via PR #15 (9cc97fb). Live test remains gated on RUN_LIVE_WRITE_TESTS=1 + STRONG_DISPOSABLE_USER_ID (no disposable account configured in this env); will be exercised as part of sc-ho9c live-test run if account becomes available.
