@@ -43,11 +43,25 @@ export function createClient(opts: ClientFactoryOptions = {}): StrongClient {
   })
 }
 
-/** Resolve login credentials from env vars. */
-export function credentialsFromEnv(): { username: string; password: string } | null {
+/**
+ * Login username from env vars, resolved independently of the password so a
+ * user can supply STRONG_USERNAME/STRONG_USER and still type the password
+ * interactively (or pull it from a stored session).
+ */
+export function usernameFromEnv(): string | undefined {
   const env = getEnv()
-  const username = env['STRONG_USERNAME'] ?? env['STRONG_USER']
-  const password = env['STRONG_PASSWORD']
+  return env['STRONG_USERNAME'] ?? env['STRONG_USER']
+}
+
+/** Login password from env vars (STRONG_PASSWORD). */
+export function passwordFromEnv(): string | undefined {
+  return getEnv()['STRONG_PASSWORD']
+}
+
+/** Resolve full login credentials from env vars (both username and password set). */
+export function credentialsFromEnv(): { username: string; password: string } | null {
+  const username = usernameFromEnv()
+  const password = passwordFromEnv()
   if (!username || !password) return null
   return { username, password }
 }

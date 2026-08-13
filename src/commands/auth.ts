@@ -9,7 +9,7 @@
 import { randomUUID } from 'node:crypto'
 import { createInterface } from 'node:readline'
 import type { Command } from 'commander'
-import { createClient, credentialsFromEnv } from '../api/factory.js'
+import { createClient, passwordFromEnv, usernameFromEnv } from '../api/factory.js'
 import { decodeJwt } from '../api/jwt.js'
 import type { TokenState } from '../api/token-manager.js'
 import type { CliContext } from '../cli/context.js'
@@ -95,9 +95,13 @@ export function registerAuthCommand(program: Command, ctx: CliContext): void {
       'after',
       `
 Examples:
-  strong auth login                            # prompt for password (secure)
+  strong auth login                            # interactive (username + password)
   strong auth login --use-config               # store session in config file (headless)
   strong auth login -u me@example.com          # with explicit username
+
+With no flags, the username is resolved from (in order): --username,
+STRONG_USERNAME/STRONG_USER, the existing keyring/config session, then an
+interactive prompt on a TTY.
 
 Credentials can also come from environment variables:
   STRONG_USERNAME / STRONG_USER   email or username
@@ -106,15 +110,30 @@ Credentials can also come from environment variables:
     .action(async (options: { username?: string; useConfig?: boolean }) => {
       logVerbose(ctx, 'Starting login flow...')
 
-      const envCreds = credentialsFromEnv()
-      const username = options.username ?? envCreds?.username
+      // Username resolution order: --username flag → env vars → existing
+      // stored session (env session → config file → keyring) → interactive
+      // prompt on a TTY. The stored-session fallback lets a re-login (e.g.
+      // after a password change or an expired refresh token) reuse the
+      // account last stored by `auth login`, whichever backend holds it.
+      let username = options.username ?? usernameFromEnv()
+      if (!username) {
+        const stored = await getSessionInfo()
+        if (stored.state?.username) {
+          username = stored.state.username
+          logVerbose(ctx, `Using stored username from ${stored.storage} session`)
+        }
+      }
+      if (!username && process.stdin.isTTY) {
+        username = await prompt('Username/email: ')
+      }
       if (!username) {
         throw new AuthError('Missing username — pass --username or set STRONG_USERNAME/STRONG_USER')
       }
 
+      const envPassword = passwordFromEnv()
       let password: string
-      if (envCreds?.password && !options.username) {
-        password = envCreds.password
+      if (envPassword && !options.username) {
+        password = envPassword
         logVerbose(ctx, 'Using STRONG_PASSWORD from environment')
       } else {
         try {
