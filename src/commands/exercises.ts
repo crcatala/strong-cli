@@ -177,7 +177,12 @@ Examples:
         if (!session)
           throw new UsageError('--user requires authentication — run `strong auth login` first')
         const userResp = await client.getUser(session.userId, { includes: ['measurement'] })
-        measurements = [...measurements, ...(userResp._embedded?.measurement ?? [])]
+        // The user doc includes soft-deleted definitions; archived custom exercises
+        // must not reappear in the browse output.
+        measurements = [
+          ...measurements,
+          ...(userResp._embedded?.measurement ?? []).filter((m) => m.isHidden !== true),
+        ]
       }
 
       if (options.search) {
@@ -189,7 +194,9 @@ Examples:
         id: m.id,
         name: measurementName(m),
         cells: (m.cellTypeConfigs ?? []).map((c) => c.cellType).join(', '),
-        global: m.isGlobal !== false,
+        // Strong omits false defaults from user-doc measurements, so only an
+        // explicit true denotes a public/global definition.
+        global: m.isGlobal === true,
         type: m.measurementType ?? 'EXERCISE',
       }))
 

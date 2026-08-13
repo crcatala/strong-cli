@@ -99,6 +99,40 @@ afterEach(() => {
   resetEnv()
 })
 
+describe('exercises --user', () => {
+  it('hides archived custom definitions and treats omitted isGlobal as custom', async () => {
+    const h = harness(tokenEnv(tmp))
+    const fetchImpl = createFetchMock([
+      {
+        match: (url) => url.includes('/api/measurements'),
+        handler: () =>
+          mockResponse({
+            _embedded: {
+              measurement: [{ id: 'global-1', name: { en: 'Public' }, isGlobal: true }],
+            },
+          }),
+      },
+      {
+        match: (url) => url.includes('/api/users/user-1'),
+        handler: () =>
+          mockResponse(
+            userDoc([
+              { id: 'custom-1', name: { custom: 'Visible custom' } },
+              { id: 'custom-archived', name: { custom: 'Archived custom' }, isHidden: true },
+            ]),
+          ),
+      },
+    ])
+
+    await h.run(['exercises', '--user', '--json'], fetchImpl)
+
+    expect(JSON.parse(h.out.join(''))).toEqual([
+      expect.objectContaining({ id: 'global-1', global: true }),
+      expect.objectContaining({ id: 'custom-1', global: false }),
+    ])
+  })
+})
+
 describe('exercises create (opt-in write)', () => {
   it('refuses to write without the --write opt-in flag', async () => {
     const { fetchImpl, puts } = writeFetch()
