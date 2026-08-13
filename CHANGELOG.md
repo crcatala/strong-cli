@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `test:typecheck` (`tsc -p tsconfig.test.json`) now type-checks test files in
+  addition to `src`, wired into `npm run verify` and CI. The main build
+  excludes `tests/`, so a broken import or fixture in a test previously only
+  failed at runtime (caught live: a missing test import blew up the workout
+  live flow). Test-only fetch/entity typing lives in
+  `tests/helpers/fetch-types.d.ts` and `tests/helpers/fixtures.ts`
+  (`LooseEntity`, `WriteEntityView`/`asEntityView`).
+
 - Opt-in write commands for completed workouts (sc-iwa3):
   `strong workout log <name> --write --exercise <id>:<sets> [--template <id>]`,
   `strong workout delete <id> --write`, and

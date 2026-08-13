@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { editEntityName, editSetCells, verifySetCells } from '../../../src/write/edit.js'
 import { makeClock } from '../../../src/write/ids.js'
 import type { Entity } from '../../../src/write/types.js'
+import { asEntityView } from '../../helpers/fixtures.js'
 
 const clock = makeClock(() => 1_700_000_000_000)
 
@@ -90,37 +91,19 @@ function workoutLog(): Entity {
 describe('editSetCells', () => {
   it('rewrites only the edited cells; untouched cells keep their raw strings verbatim', () => {
     const out = editSetCells(workoutLog(), [{ groupIndex: 0, setIndex: 0, reps: 8 }], deps)
-    const cells = (
-      out as {
-        _embedded: {
-          cellSetGroup: { cellSets: { cells: { cellType: string; value: string | null }[] }[] }[]
-        }
-      }
-    )._embedded.cellSetGroup[0].cellSets[0].cells
+    const cells = asEntityView(out)._embedded.cellSetGroup[0].cellSets[0].cells
     expect(cells[1].value).toBe('8') // reps edited
     expect(cells[0].value).toBe('13.6077711') // weight NOT round-tripped — byte-for-byte
     expect(cells[2].value).toBeNull()
     // second working set entirely untouched, including its raw FP weight
-    const set2 = (
-      out as {
-        _embedded: {
-          cellSetGroup: { cellSets: { cells: { cellType: string; value: string | null }[] }[] }[]
-        }
-      }
-    )._embedded.cellSetGroup[0].cellSets[2].cells
+    const set2 = asEntityView(out)._embedded.cellSetGroup[0].cellSets[2].cells
     expect(set2[0].value).toBe('18.143694800000002')
     expect(out.lastChanged).toBe(clock())
   })
 
   it('edits weight of the SECOND working set (skipping rest-timer rows) and converts lb→kg', () => {
     const out = editSetCells(workoutLog(), [{ groupIndex: 0, setIndex: 1, weight: 135 }], deps)
-    const set2 = (
-      out as {
-        _embedded: {
-          cellSetGroup: { cellSets: { cells: { cellType: string; value: string | null }[] }[] }[]
-        }
-      }
-    )._embedded.cellSetGroup[0].cellSets[2].cells
+    const set2 = asEntityView(out)._embedded.cellSetGroup[0].cellSets[2].cells
     expect(Number(set2[0].value)).toBeCloseTo(135 * 0.45359237, 6)
     expect(set2[1].value).toBe('10') // reps untouched
   })
@@ -130,25 +113,13 @@ describe('editSetCells', () => {
       clock,
       weightUnit: 'KILOGRAMS',
     })
-    const cells = (
-      out as {
-        _embedded: {
-          cellSetGroup: { cellSets: { cells: { cellType: string; value: string | null }[] }[] }[]
-        }
-      }
-    )._embedded.cellSetGroup[0].cellSets[0].cells
+    const cells = asEntityView(out)._embedded.cellSetGroup[0].cellSets[0].cells
     expect(Number(cells[0].value)).toBe(100)
   })
 
   it('writes an rpe value onto the RPE cell', () => {
     const out = editSetCells(workoutLog(), [{ groupIndex: 0, setIndex: 0, rpe: 9 }], deps)
-    const cells = (
-      out as {
-        _embedded: {
-          cellSetGroup: { cellSets: { cells: { cellType: string; value: string | null }[] }[] }[]
-        }
-      }
-    )._embedded.cellSetGroup[0].cellSets[0].cells
+    const cells = asEntityView(out)._embedded.cellSetGroup[0].cellSets[0].cells
     const rpeCell = cells.find((c) => c.cellType === 'RPE')
     expect(rpeCell?.value).toBe('9')
   })
@@ -204,13 +175,7 @@ describe('editSetCells', () => {
       clock,
       weightUnit: 'KILOGRAMS',
     })
-    const cells = (
-      out as {
-        _embedded: {
-          cellSetGroup: { cellSets: { cells: { cellType: string; value: string | null }[] }[] }[]
-        }
-      }
-    )._embedded.cellSetGroup[0].cellSets[0].cells
+    const cells = asEntityView(out)._embedded.cellSetGroup[0].cellSets[0].cells
     expect(cells[0].value).toBe('50')
     expect(cells[1].value).toBe('10')
   })
@@ -253,11 +218,7 @@ describe('verifySetCells', () => {
   })
 
   it('tolerates a numeric server value for reps (string-normalized compare)', () => {
-    const server = workoutLog() as {
-      _embedded: {
-        cellSetGroup: { cellSets: { cells: { cellType: string; value: string | null }[] }[] }[]
-      }
-    }
+    const server = asEntityView(workoutLog())
     server._embedded.cellSetGroup[0].cellSets[0].cells[1].value = 8 as unknown as string
     expect(
       verifySetCells(workoutLog(), server, [{ groupIndex: 0, setIndex: 0, reps: 8 }], vdeps),
@@ -282,9 +243,7 @@ describe('verifySetCells', () => {
     const orig = workoutLog()
     const written = editSetCells(orig, edits, deps)
     // simulate the server dropping the second working set entirely
-    const mangled = structuredClone(written) as {
-      _embedded: { cellSetGroup: { cellSets: unknown[] }[] }
-    }
+    const mangled = asEntityView(structuredClone(written))
     mangled._embedded.cellSetGroup[0].cellSets.pop()
     expect(verifySetCells(orig, mangled, edits, vdeps)).toBe(false)
     // sanity: the un-mangled document still confirms

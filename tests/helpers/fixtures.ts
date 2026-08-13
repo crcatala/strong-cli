@@ -192,6 +192,83 @@ export function createFetchMock(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Write-path test helpers (captured PUT bodies + loose entity views)
+// ---------------------------------------------------------------------------
+
+/**
+ * A captured envelope entity from a write-path PUT (tests). Deep property
+ * access is intentionally untyped — the Strong write shapes are loose, and
+ * assertions reach several levels (e.g. `sent._embedded.cellSetGroup[0].cells`).
+ */
+// biome-ignore lint/suspicious/noExplicitAny: test-only loose access to captured PUT bodies
+export type LooseEntity = Record<string, any>
+
+/**
+ * Structural view of a write-layer entity for test assertions.
+ *
+ * The write-layer `Entity` type keeps `_links`/`_embedded`/cells loose (index
+ * signature of `unknown`), so tests that deep-assert shapes cast through this
+ * view with {@link asEntityView}. Fields are optional to match the API's
+ * omitted-false-defaults behavior.
+ */
+export interface WriteEntityView {
+  id: string
+  logType?: string
+  name?: { custom?: string } | string | null
+  isHidden?: boolean
+  isArchived?: boolean
+  access?: string
+  isGlobal?: boolean
+  startDate?: string
+  endDate?: string
+  created?: string
+  lastChanged?: string
+  measurementType?: string
+  cellTypeConfigs?: {
+    cellType: string
+    mandatory?: boolean
+    isExponent?: boolean
+    index?: number
+  }[]
+  _links: {
+    user?: { href: string }
+    template?: unknown
+    measurement?: { href: string }
+    tag?: { href: string }[]
+    [rel: string]: unknown
+  }
+  _embedded: {
+    // Present on every workout/template-shaped entity (folders/tags don't
+    // carry it, but they're never asserted through this field).
+    cellSetGroup: {
+      id?: string
+      isHidden?: boolean
+      groupIndex?: number | null
+      _links?: { measurement?: { href: string } }
+      cellSets: {
+        id?: string
+        cellSetTag?: unknown
+        isCompleted?: boolean
+        isHidden?: boolean
+        cells: {
+          id?: string
+          cellType: string
+          value?: string | null
+          isHidden?: boolean
+        }[]
+      }[]
+    }[]
+    [rel: string]: unknown
+  }
+  [key: string]: unknown
+}
+
+/** Cast a write-layer entity (or unknown) to the structural test view. */
+export function asEntityView(entity: unknown): WriteEntityView {
+  return entity as WriteEntityView
+}
+
 export function urlIncludes(part: string) {
   return {
     match: (url: string) => url.includes(part),

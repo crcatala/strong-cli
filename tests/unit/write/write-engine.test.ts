@@ -17,7 +17,11 @@ function deps(overrides: Partial<WriteDeps> = {}): WriteDeps & {
   const refresh = vi.fn(async () => snapshot())
   const put = vi.fn(async () => {})
   const persist = vi.fn(async () => {})
-  return { refresh, put, persist, ...overrides }
+  return { refresh, put, persist, ...overrides } as unknown as WriteDeps & {
+    refresh: ReturnType<typeof vi.fn>
+    put: ReturnType<typeof vi.fn>
+    persist: ReturnType<typeof vi.fn>
+  }
 }
 
 describe('WriteEngine', () => {

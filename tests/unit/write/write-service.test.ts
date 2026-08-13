@@ -583,7 +583,7 @@ describe('WorkoutWriteService.updateWorkoutSets (inferred + verified)', () => {
   it('reconciles the snapshot to pristine server truth when an edit is unconfirmed', async () => {
     const s = workoutSnapshot({ logs: { 'w-1': seededWorkout() } })
     const d = workoutDeps(s)
-    const reconcile = vi.fn(async () => {})
+    const reconcile = vi.fn(async (_fresh: Snapshot) => {})
     // Server truth still shows the OLD reps (edit did not land).
     const stale = workoutSnapshot({ logs: { 'w-1': seededWorkout() } })
     const res = await workoutService(d, async () => stale, reconcile).updateWorkoutSets('w-1', [

@@ -39,6 +39,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Typechecks test files too (tsconfig.test.json includes tests/). The
+      # main build excludes tests, so without this step a broken import or
+      # fixture in a test only fails at runtime.
+      - name: Typecheck tests
+        run: npm run test:typecheck
+
       # Runs all unit tests + enforces coverage thresholds (see
       # vitest.config.ts). Live tests auto-skip — they require
       # RUN_LIVE_TESTS=1 + real credentials.

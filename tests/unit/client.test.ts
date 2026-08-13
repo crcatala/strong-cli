@@ -57,7 +57,7 @@ describe('StrongClient', () => {
 
   it('fetches the public measurements endpoint without auth', async () => {
     const store = memStore()
-    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
       const url = String(input)
       if (url.includes('/api/measurements')) {
         return mockResponse({ total: 2, _embedded: { measurement: [{ id: 'm1' }] } })
@@ -421,12 +421,18 @@ describe('StrongClient', () => {
       userId: 'user-1',
       expiresAt: Date.now() + 1200_000,
     })
-    const envelope = {
+    const envelope: {
+      id: string
+      strongAnalytics: false
+      _embedded: Record<string, unknown[]>
+    } = {
       id: 'user-1',
       strongAnalytics: false,
       _embedded: { template: [{ id: 'tpl-1', name: { custom: 'Push Day' } }] },
     }
-    const fetchImpl = vi.fn(async () => new Response(null, { status: 204 }))
+    const fetchImpl = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(null, { status: 204 }),
+    )
     const client = makeClient(store, fetchImpl)
 
     await client.putEnvelope('user-1', envelope)

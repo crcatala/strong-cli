@@ -401,14 +401,15 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
           name: `strong-cli tpl ${newId()}`,
           exercises: [{ exerciseId: ex.id, sets: [{ reps: 10, weight: 60 }] }],
         })
+        const createdId = created.id
         let fresh = await sync.resync()
         const createdOnServer = fresh.entities.template[created.id]
         expect(createdOnServer).toMatchObject({ id: created.id, name: { custom: created.name } })
         expect(createdOnServer?.isHidden).not.toBe(true)
         // The template must be linked into a folder (default My Templates).
         const folder = Object.values(fresh.entities.folder).find((f) =>
-          (f._links?.template as { href: string }[] | undefined)?.some(
-            (l) => l.href === `/api/users/${session.userId}/templates/${created.id}`,
+          ((f._links as { template?: { href: string }[] } | undefined)?.template ?? []).some(
+            (l) => l.href === `/api/users/${session.userId}/templates/${createdId}`,
           ),
         )
         expect(folder).toBeDefined()
@@ -420,14 +421,15 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
         expect(fresh.entities.template[created.id]?.name).toEqual({ custom: renamed })
       } finally {
         if (created) {
+          const createdId = created.id
           await templateService.deleteTemplate(created.id)
           const fresh = await sync.resync()
           const deletedOnServer = fresh.entities.template[created.id]
           expect(deletedOnServer === undefined || deletedOnServer.isHidden === true).toBe(true)
           // The template must be unlinked from its folder.
           const stillLinked = Object.values(fresh.entities.folder).some((f) =>
-            (f._links?.template as { href: string }[] | undefined)?.some(
-              (l) => l.href === `/api/users/${session.userId}/templates/${created.id}`,
+            ((f._links as { template?: { href: string }[] } | undefined)?.template ?? []).some(
+              (l) => l.href === `/api/users/${session.userId}/templates/${createdId}`,
             ),
           )
           expect(stillLinked).toBe(false)
