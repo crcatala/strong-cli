@@ -11,7 +11,7 @@ tags: [auth, security, tech-debt]
 ---
 # jwt: decodeJwt reads claims but never validates them
 
-PLAN.md backlog P3. src/api/jwt.ts decodeJwt() decodes the payload and reads exp + nameidentifier but never verifies the signature (by design: token comes from our own TLS login) and performs no sanity checks on exp bounds, iat, or nbf. Accepted threat model for a personal read-only CLI today.
+JWT claim-validation backlog (P3). src/api/jwt.ts decodeJwt() decodes the payload and reads exp + nameidentifier but never verifies the signature (by design: token comes from our own TLS login) and performs no sanity checks on exp bounds, iat, or nbf. Accepted threat model for a personal read-only CLI today.
 
 ## Design
 
@@ -19,11 +19,11 @@ Revisit only if the tool is ever shared or fed third-party session files. Minima
 
 ## Acceptance Criteria
 
-Either (a) implemented sanity checks with tests for malformed/out-of-range claims, or (b) the accepted-threat-model decision is documented in the code comment + PLAN.md with a clear rationale. All existing tests pass.
+Either (a) implemented sanity checks with tests for malformed/out-of-range claims, or (b) the accepted-threat-model decision is documented in the code comment with a clear rationale. All existing tests pass.
 
 
 ## Notes
 
 **2026-08-07T20:11:55Z**
 
-Decision documented (2026-08-07) — option (b) of the acceptance criteria: the accepted threat model is now spelled out in the decodeJwt() doc comment (src/api/jwt.ts) with the rationale (token from own TLS login, personal read-only CLI, never imports third-party session files) and the revisit conditions (shared tool or external session data; at minimum exp-bounds/iat/nbf sanity checks, full signature verification infeasible without the signing key). PLAN.md backlog entry updated to reflect the documented decision. Closed without code changes.
+Decision documented (2026-08-07) — option (b) of the acceptance criteria: the accepted threat model is now spelled out in the decodeJwt() doc comment (src/api/jwt.ts) with the rationale (token from own TLS login, personal read-only CLI, never imports third-party session files) and the revisit conditions (shared tool or external session data; at minimum exp-bounds/iat/nbf sanity checks, full signature verification infeasible without the signing key). The project documentation was updated to reflect the documented decision. Closed without code changes.
