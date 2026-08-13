@@ -8,7 +8,7 @@
  *   RUN_LIVE_TESTS=1 STRONG_USERNAME=you@example.com STRONG_PASSWORD=... \
  *     npx vitest run tests/live --no-file-parallelism
  *
- * The single mutation test additionally requires RUN_LIVE_WRITE_TESTS=1 and
+ * Mutation tests additionally require RUN_LIVE_WRITE_TESTS=1 and
  * STRONG_DISPOSABLE_USER_ID=<the logged-in disposable account id>.
  */
 import { tmpdir } from 'node:os'
@@ -86,7 +86,7 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
     // live backend (150ms/page default keeps it gentle). Allow plenty of time.
     const logs = await client2.getAllLogs(session.userId)
     expect(Array.isArray(logs)).toBe(true)
-    console.log(`  fetched ${logs.length} logs for user ${session.userId}`)
+    console.log(`  fetched ${logs.length} logs`)
 
     const measurements = await client2.getAllMeasurements()
     expect(measurements._embedded?.measurement?.length).toBeGreaterThan(0)

@@ -89,8 +89,9 @@ jobs:
         env:
           STRONG_USERNAME: ${{ secrets.STRONG_TEST_USER }}
           STRONG_PASSWORD: ${{ secrets.STRONG_TEST_PASSWORD }}
+          STRONG_DISPOSABLE_USER_ID: ${{ secrets.STRONG_DISPOSABLE_USER_ID }}
         run: |
-          if [ -z "$STRONG_USERNAME" ] || [ -z "$STRONG_PASSWORD" ]; then
+          if [ -z "$STRONG_USERNAME" ] || [ -z "$STRONG_PASSWORD" ] || [ -z "$STRONG_DISPOSABLE_USER_ID" ]; then
             echo "::warning::Live-test credentials are not configured; skipping live tests."
             echo "skipped=true" >> "$GITHUB_OUTPUT"
           else
@@ -136,6 +137,8 @@ jobs:
           RUN_LIVE_TESTS: '1'
           STRONG_USERNAME: ${{ secrets.STRONG_TEST_USER }}
           STRONG_PASSWORD: ${{ secrets.STRONG_TEST_PASSWORD }}
+          STRONG_DISPOSABLE_USER_ID: ${{ secrets.STRONG_DISPOSABLE_USER_ID }}
+          RUN_LIVE_WRITE_TESTS: '1'
           STRONG_LIVE_DELAY_MS: '300'
         run: npm run test:live
       - name: Test summary
