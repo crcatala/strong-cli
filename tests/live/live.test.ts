@@ -317,7 +317,7 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
       try {
         const ex = await exerciseService.createExercise({
           name: `strong-cli tpl ${newId()}`,
-          cellTypeConfigs: [{ cellType: 'REPS', mandatory: true }, { cellType: 'BARBELL_WEIGHT' }],
+          cellTypeConfigs: [{ cellType: 'REPS', mandatory: true }, { cellType: 'RPE', isExponent: true }],
           notes: 'created by the sc-ho9c live test',
         })
         exerciseId = ex.id
