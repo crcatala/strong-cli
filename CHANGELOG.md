@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   prompting interactively on a TTY as a final fallback. Previously it required
   `STRONG_USERNAME` whenever `STRONG_PASSWORD` was set and failed with
   "Missing username" even when a session already existed.
+  `STRONG_PASSWORD` can now also be supplied on its own alongside an existing
+  stored session for headless logins.
 
 ## [0.2.0] - 2026-08-13
 
