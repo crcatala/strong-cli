@@ -76,10 +76,22 @@ export interface Measurement {
   updatedAt?: string
 }
 
+export interface MeasuredValue {
+  id: string
+  type: string
+  value: number
+  isHidden?: boolean
+  created?: string
+  lastChanged?: string
+  _links?: { user?: Link; [rel: string]: unknown }
+  [key: string]: unknown
+}
+
 export interface MeasurementsResponse {
   _links?: HalLinks & { next?: Link }
   total?: number
-  _embedded?: { measurement?: Measurement[] }
+  preferences?: { weightUnit?: Record<string, string>; [key: string]: unknown }
+  _embedded?: { measurement?: Measurement[]; measuredValue?: MeasuredValue[] }
 }
 
 // ============================================================================

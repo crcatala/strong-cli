@@ -35,7 +35,7 @@ public measurements endpoint responds with 253 exercises.
 | `POST` | `/auth/login` | — | Body `{usernameOrEmail, password, deviceId?}` → `{accessToken, refreshToken, expiresIn (s), userId}`. `deviceId` (uuid) is present in newer clients (iOS 6.4.2); reuse a stable one across logins/refreshes. |
 | `POST` | `/auth/login/refresh` | — (no bearer) | Body `{accessToken, refreshToken, deviceId?}` → rotated `{accessToken, refreshToken, expiresIn}`. Rotates both tokens. |
 | `GET` | `/api/users/{userId}` | Bearer | Main data endpoint. Query: `limit` (max per page, e.g. 200/500), `continuation` (opaque cursor), `include=log|measurement|tag|template|folder|widget|measuredValue|metric` (repeatable). Returns embedded collections + `_links.next` → follow it for more (pagination is **continuation-based**, not offset). |
-| `GET` | `/api/users/{userId}/measurements` | Bearer | User's custom exercise definitions. |
+| `GET` | `/api/users/{userId}/measurements` | Bearer | User body-measurement response; embedded `measuredValue` entities carry `{id,type,value,isHidden,created,lastChanged,_links.user}`. |
 | `GET` | `/api/users/{userId}/templates` | Bearer | Routine templates. |
 | `GET` | `/api/users/{userId}/logs/{logId}` | Bearer | Single log detail. |
 | `GET` | `/api/logs/{userId}` | Bearer | All logs for the user. |
@@ -45,6 +45,9 @@ public measurements endpoint responds with 253 exercises.
 ### Public resource list (from a user doc `_links`)
 
 `folders`, `measurements`, `measuredValues`, `templates`, `metrics`, `metricCaches`,
+
+Measured-value writes use the envelope PUT with a flat `isHidden` soft-delete.
+The delete shape is inferred and must be verified with a fresh user-doc sync.
 `logs`, `tags`, `widgets` — each with a collection rel (+ `next` for pagination).
 
 ## Standard request shape (curl)

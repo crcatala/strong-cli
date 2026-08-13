@@ -9,6 +9,8 @@
  * scoped to the user.
  */
 
+import type { WeightUnit } from '../lib/units.js'
+import { weightToKg } from '../lib/units.js'
 import type { Clock } from './ids.js'
 import { newId } from './ids.js'
 import type { Entity } from './types.js'
@@ -32,6 +34,34 @@ export interface ExerciseDefinitionInput {
  * tags use `/api/tags/{id}`; matching strong-mcp, tag ids are passed through
  * without validation).
  */
+export const MEASURED_VALUE_TYPES = ['WEIGHT', 'BODY_FAT_PERCENTAGE', 'CALORIC_INTAKE'] as const
+export type MeasuredValueType = (typeof MEASURED_VALUE_TYPES)[number]
+
+export interface MeasuredValueInput {
+  type: MeasuredValueType
+  value: number
+  weightUnit: WeightUnit
+}
+
+/** Build a body-measurement entity for the user-doc envelope. */
+export function buildMeasuredValue(
+  input: MeasuredValueInput,
+  userId: string,
+  deps: { clock: Clock },
+): Entity {
+  const ts = deps.clock()
+  const value = input.type === 'WEIGHT' ? weightToKg(input.value, input.weightUnit) : input.value
+  return {
+    id: newId(),
+    type: input.type,
+    value,
+    isHidden: false,
+    _links: { user: { href: `/api/users/${userId}` } },
+    created: ts,
+    lastChanged: ts,
+  }
+}
+
 export function buildExerciseDefinition(
   input: ExerciseDefinitionInput,
   userId: string,

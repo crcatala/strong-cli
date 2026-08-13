@@ -1,6 +1,6 @@
 ---
 id: sc-hf54
-status: open
+status: in_progress
 deps: [sc-m3xf]
 links: []
 created: 2026-08-13T00:16:39Z
@@ -30,3 +30,9 @@ CLI shape: strong measurements [--type <T>] | strong measurements add <type> <va
 
 List shows existing measurements (read gap closed). Add creates one visible via list and on the disposable account in the app/strong-mcp. Delete soft-hides it with serverConfirmed === true. Unknown type -> clean UsageError. Live test on disposable account: add -> verify -> delete -> verify.
 
+
+## Notes
+
+**2026-08-13T13:21:12Z**
+
+Implemented measurements list/add/delete CLI, measuredValue builder/service, unit conversion, inferred delete verification, docs, and unit tests. Live disposable-account verification was not run because STRONG_DISPOSABLE_USER_ID/RUN_LIVE_WRITE_TESTS are not configured.

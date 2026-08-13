@@ -149,6 +149,25 @@ from the user document (verified live: tags ship complete `_links.measurement`
 lists). `strong export --tag X` also records `"filter": {"tag": "X"}` in the
 export document so filtered exports are self-describing.
 
+### Body measurements (require auth)
+
+Body measurements support listing, logging, and soft deletion. Supported types
+are `WEIGHT`, `BODY_FAT_PERCENTAGE`, and `CALORIC_INTAKE`. Weight input/output
+uses the account's display unit; the API stores it canonically in kilograms.
+Writes require `--write` and should only be run against a disposable account.
+
+```bash
+strong measurements
+strong measurements --type WEIGHT --table
+strong measurements add WEIGHT 180 --write
+strong measurements add BODY_FAT_PERCENTAGE 18 --write
+strong measurements add CALORIC_INTAKE 2400 --write
+strong measurements delete <measurement-id> --write
+```
+
+Measurement deletion is an inferred API shape. The CLI re-syncs after the PUT
+and reports `serverConfirmed` (`true`, `false`, or `undefined`).
+
 ### Exercise library (public — works without auth)
 
 ```bash

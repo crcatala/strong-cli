@@ -12,7 +12,12 @@
 
 import { resolveWeightUnit, type WeightUnit } from '../lib/units.js'
 import { editEntityName, editSetCells, type SetEdit, verifySetCells } from './edit.js'
-import { buildExerciseDefinition, type CellTypeConfig } from './entity-builders.js'
+import {
+  buildExerciseDefinition,
+  buildMeasuredValue,
+  type CellTypeConfig,
+  type MeasuredValueType,
+} from './entity-builders.js'
 import {
   addTemplateToFolder,
   defaultFolder,
@@ -33,6 +38,64 @@ export class EntityNotFoundError extends Error {
   ) {
     super(`No ${collection} with id "${id}" in the current snapshot`)
     this.name = 'EntityNotFoundError'
+  }
+}
+
+export interface MeasuredValueWriteServiceOptions {
+  engine: WriteEngine
+  clock: Clock
+  userId: string
+  resync: () => Promise<Snapshot>
+  reconcile?: (fresh: Snapshot) => Promise<void> | void
+}
+
+/** Write service for body measurements. Deletes are inferred and verified. */
+export class MeasuredValueWriteService {
+  constructor(private readonly opts: MeasuredValueWriteServiceOptions) {}
+
+  logMeasurement(
+    type: MeasuredValueType,
+    value: number,
+  ): Promise<{ id: string; type: string; value: number }> {
+    return this.opts.engine.write((snapshot) => {
+      const entity = buildMeasuredValue(
+        { type, value, weightUnit: weightUnitOf(snapshot) },
+        this.opts.userId,
+        { clock: this.opts.clock },
+      )
+      return {
+        changes: [{ collection: 'measuredValue', entity }],
+        summary: { id: entity.id, type, value },
+      }
+    })
+  }
+
+  async deleteMeasurement(id: string): Promise<{ id: string; serverConfirmed?: boolean }> {
+    const summary = await this.opts.engine.write((snapshot) => {
+      const measuredValue = requireVisible(snapshot, 'measuredValue', id)
+      return {
+        changes: [
+          { collection: 'measuredValue', entity: softDelete(measuredValue, this.opts.clock) },
+        ],
+        summary: { id },
+      }
+    })
+    const serverConfirmed = await this.opts.engine.exclusive(async () => {
+      const fresh = await this.safeResync()
+      if (!fresh) return undefined
+      const confirmed = fresh.entities.measuredValue[id]?.isHidden === true
+      if (!confirmed && this.opts.reconcile) await this.opts.reconcile(fresh)
+      return confirmed
+    })
+    return { ...summary, serverConfirmed }
+  }
+
+  private async safeResync(): Promise<Snapshot | null> {
+    try {
+      return await this.opts.resync()
+    } catch {
+      return null
+    }
   }
 }
 
