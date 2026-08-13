@@ -55,7 +55,7 @@
     "release:dry": "release-it --dry-run --no-npm --no-github",
     "release:first": "release-it --first-release",
     "release:prep": "bash scripts/prep-release.sh",
-    "prepack": "npm run build",
+    "prepare": "npm run build",
     "prepublishOnly": "npm run verify",
     "test:typecheck": "tsc -p tsconfig.test.json"
   },
