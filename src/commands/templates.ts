@@ -75,15 +75,16 @@ async function createTemplateWriteService() {
  * converted to kg on the wire). e.g. `10`, `10@60`, `8@60~8`.
  */
 function parseSetSpec(spec: string): SetInput {
-  const m = /^(\d+)(?:@([\d.]+))?(?:~(\d+))?$/.exec(spec.trim())
+  // reps[@weight][~rpe]; RPE allows half-steps (8.5) like the read path.
+  const m = /^(\d+)(?:@([\d.]+))?(?:~([\d.]+))?$/.exec(spec.trim())
   if (!m) {
     throw new UsageError(
-      `Invalid set spec "${spec}" — expected reps[@weight][~rpe], e.g. 10@60 or 8@60~8`,
+      `Invalid set spec "${spec}" — expected reps[@weight][~rpe], e.g. 10@60 or 8@60~8.5`,
     )
   }
   const reps = Number.parseInt(m[1], 10)
   const weight = m[2] !== undefined ? Number.parseFloat(m[2]) : 0
-  const rpe = m[3] !== undefined ? Number.parseInt(m[3], 10) : undefined
+  const rpe = m[3] !== undefined ? Number.parseFloat(m[3]) : undefined
   if (!Number.isFinite(reps) || reps <= 0) {
     throw new UsageError(`Invalid reps in set spec "${spec}"`)
   }
@@ -138,6 +139,9 @@ function wrapWriteError(err: unknown): never {
     throw new UsageError(
       `${err.message} — sync or create the exercise first with \`strong exercises create\``,
     )
+  }
+  if (err instanceof Error && err.message.startsWith('Archived exercise id')) {
+    throw new UsageError(err.message)
   }
   throw err
 }

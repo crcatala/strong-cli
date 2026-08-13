@@ -191,6 +191,22 @@ describe('templates create (opt-in write)', () => {
     expect(folderSent.id).toBe('folder-other')
   })
 
+  it('supports half-step RPE values (8.5) like the read path', async () => {
+    const { fetchImpl, puts } = writeFetch({ measurement: [squat], folder: [myTemplates] })
+    const h = harness(tokenEnv(tmp))
+
+    await h.run(
+      ['templates', 'create', 'Push Day', '--write', '--exercise', 'ex-1:8@60~8.5', '--plain'],
+      fetchImpl,
+    )
+
+    const sent = puts[0].body._embedded.template[0]
+    const rpeCell = sent._embedded.cellSetGroup[0].cellSets[0].cells.find(
+      (c: { cellType: string }) => c.cellType === 'RPE',
+    )
+    expect(rpeCell.value).toBe('8.5')
+  })
+
   it('fails cleanly for an unknown exercise id', async () => {
     const { fetchImpl, puts } = writeFetch({ folder: [myTemplates] })
     const h = harness(tokenEnv(tmp))
@@ -198,6 +214,17 @@ describe('templates create (opt-in write)', () => {
     await expect(
       h.run(['templates', 'create', 'X', '--write', '--exercise', 'ex-missing:10'], fetchImpl),
     ).rejects.toThrow(/Unknown exercise id "ex-missing"/)
+    expect(puts).toHaveLength(0)
+  })
+
+  it('fails cleanly for an archived exercise id', async () => {
+    const archived = { ...squat, isHidden: true }
+    const { fetchImpl, puts } = writeFetch({ measurement: [archived], folder: [myTemplates] })
+    const h = harness(tokenEnv(tmp))
+
+    await expect(
+      h.run(['templates', 'create', 'X', '--write', '--exercise', 'ex-1:10'], fetchImpl),
+    ).rejects.toThrow(/Archived exercise id "ex-1"/)
     expect(puts).toHaveLength(0)
   })
 

@@ -89,6 +89,13 @@ export function buildLog(
         `Unknown exercise id "${ex.exerciseId}" (not in snapshot; sync or create it first)`,
       )
     }
+    // The archive contract (sc-k14b) says archived definitions must not resolve
+    // for new writes, so hidden exercises are rejected here too.
+    if (def.isHidden === true) {
+      throw new Error(
+        `Archived exercise id "${ex.exerciseId}" (hidden/soft-deleted; unarchive it in the app or create a new one)`,
+      )
+    }
     const configs = (
       Array.isArray(def.cellTypeConfigs) ? (def.cellTypeConfigs as CellTypeConfigLike[]) : []
     )

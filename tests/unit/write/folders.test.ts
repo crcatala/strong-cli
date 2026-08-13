@@ -92,4 +92,15 @@ describe('findFolderContaining', () => {
     const s = snapshot({ 'folder-other': other })
     expect(findFolderContaining(s, 'user-1', 'tpl-1')).toBeUndefined()
   })
+
+  it('finds hidden folders too — delete must unlink from soft-deleted folders', () => {
+    const hiddenWithLink = addTemplateToFolder(
+      { ...myTemplates, isHidden: true },
+      'user-1',
+      'tpl-1',
+      clock,
+    )
+    const s = snapshot({ 'folder-my-templates': hiddenWithLink, 'folder-other': other })
+    expect(findFolderContaining(s, 'user-1', 'tpl-1')?.id).toBe('folder-my-templates')
+  })
 })

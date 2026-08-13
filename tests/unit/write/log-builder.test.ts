@@ -112,6 +112,19 @@ describe('buildLog (TEMPLATE)', () => {
     ).toThrow(/Unknown exercise id "missing"/)
   })
 
+  it('throws for an archived (hidden) exercise — it must not resolve for new writes', () => {
+    const archived = { ...squat, isHidden: true }
+    const s = snapshot({ 'ex-1': archived })
+    expect(() =>
+      buildLog(
+        'TEMPLATE',
+        { name: 'X', exercises: [{ exerciseId: 'ex-1', sets: [{ reps: 10, weight: 0 }] }] },
+        s,
+        { clock, weightUnit: 'KILOGRAMS' },
+      ),
+    ).toThrow(/Archived exercise id "ex-1"/)
+  })
+
   it('throws for a cell type it cannot write (e.g. DISTANCE)', () => {
     const cardio = {
       id: 'ex-2',

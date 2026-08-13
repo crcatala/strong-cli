@@ -64,12 +64,14 @@ export function removeTemplateFromFolder(
   return clone as Entity
 }
 
-/** Find the visible folder whose `_links.template` contains the template href. */
+/** Find the folder whose `_links.template` contains the template href. */
 export function findFolderContaining(
   snapshot: Snapshot,
   userId: string,
   templateId: string,
 ): Entity | undefined {
   const href = templateHref(userId, templateId)
-  return visibleFolders(snapshot).find((f) => links(f).some((l) => l.href === href))
+  // Scan ALL folders, including hidden ones: a soft-deleted folder may still
+  // hold template links that deleteTemplate must clean up (stated contract).
+  return Object.values(snapshot.entities.folder).find((f) => links(f).some((l) => l.href === href))
 }

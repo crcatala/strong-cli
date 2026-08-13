@@ -324,6 +324,33 @@ describe('TemplateWriteService', () => {
     expect(envelope._embedded.folder).toEqual([])
   })
 
+  it('deleteTemplate unlinks from a hidden (soft-deleted) folder too', async () => {
+    const existing = {
+      id: 'tpl-1',
+      logType: 'TEMPLATE',
+      name: { custom: 'Push Day' },
+      isHidden: false,
+      lastChanged: '2026-01-01T00:00:00.000Z',
+    }
+    const hiddenFolderWithLink = {
+      id: 'folder-gone',
+      name: { custom: 'Gone' },
+      isHidden: true,
+      _links: { template: [{ href: '/api/users/user-1/templates/tpl-1' }] },
+    }
+    const s = templateSnapshot({
+      templates: { 'tpl-1': existing },
+      folders: { 'folder-gone': hiddenFolderWithLink },
+    })
+    const d = templateDeps(s)
+    await templateService(d).deleteTemplate('tpl-1')
+    const envelope = d.put.mock.calls[0][0]
+    const folderSent = envelope._embedded.folder[0]
+    expect(folderSent.id).toBe('folder-gone')
+    expect(folderSent.isHidden).toBe(true)
+    expect(folderSent._links.template).toEqual([])
+  })
+
   it('deleteTemplate throws EntityNotFoundError for unknown ids', async () => {
     const d = templateDeps(templateSnapshot({}))
     await expect(templateService(d).deleteTemplate('tpl-missing')).rejects.toBeInstanceOf(
