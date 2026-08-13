@@ -114,7 +114,8 @@ tests/
   is a gap in this CLI, so opt-in writes were added behind an explicit `--write`
   flag (defaults stay read-only; live tests only ever touch a disposable
   account). Custom-exercise create/rename/archive ship first (sc-k14b);
-  templates, workouts, and body measurements follow.
+  routine-template create/rename/delete ship next (sc-ho9c); workouts and
+  body measurements follow.
 - ~~Folders/tags listing~~ **done** — `strong folders` / `strong tags`
   (`src/commands/folders.ts`, `src/commands/tags.ts`; shapes verified live
   2026-08). ~~Possible follow-up: `--tag` filter on `workouts`/`stats`/`export`~~

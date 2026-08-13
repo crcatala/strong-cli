@@ -24,7 +24,7 @@ import { softDelete } from '../../src/write/soft-delete.js'
 import { SyncEngine } from '../../src/write/sync-engine.js'
 import { COLLECTIONS, type Entity } from '../../src/write/types.js'
 import { WriteEngine } from '../../src/write/write-engine.js'
-import { ExerciseWriteService } from '../../src/write/write-service.js'
+import { ExerciseWriteService, TemplateWriteService } from '../../src/write/write-service.js'
 import { memStore } from './mem-store.js'
 
 const RUN_LIVE = process.env['RUN_LIVE_TESTS'] === '1'
@@ -269,6 +269,96 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
           const fresh = await sync.resync()
           const archivedOnServer = fresh.entities.measurement[created.id]
           expect(archivedOnServer === undefined || archivedOnServer.isHidden === true).toBe(true)
+        }
+      }
+    },
+    180_000,
+  )
+  it.skipIf(!RUN_LIVE_WRITES)(
+    'full template write flow through TemplateWriteService: create -> rename -> delete, verified at each step',
+    async () => {
+      const username = process.env['STRONG_USERNAME'] ?? process.env['STRONG_USER']
+      const password = process.env['STRONG_PASSWORD']
+      const disposableUserId = process.env['STRONG_DISPOSABLE_USER_ID']
+      if (!username || !password || !disposableUserId) {
+        throw new Error('Write live tests require credentials and STRONG_DISPOSABLE_USER_ID')
+      }
+
+      const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+      const session = await client2.login(username, password)
+      if (session.userId !== disposableUserId) {
+        throw new Error(
+          'Refusing write live test: logged-in user does not match STRONG_DISPOSABLE_USER_ID',
+        )
+      }
+
+      const snapshotPath = join(tmpdir(), `strong-live-template-svc-${Date.now()}.json`)
+      const sync = new SyncEngine({ client: client2, userId: session.userId, snapshotPath })
+      const engine = new WriteEngine({
+        refresh: () => sync.sync(),
+        put: (envelope) => client2.putEnvelope(session.userId, envelope),
+        persist: (s) => saveSnapshot(s, snapshotPath),
+      })
+      const templateService = new TemplateWriteService({
+        engine,
+        clock: makeClock(),
+        userId: session.userId,
+      })
+      const exerciseService = new ExerciseWriteService({
+        engine,
+        clock: makeClock(),
+        userId: session.userId,
+      })
+
+      // A template references an exercise by id from the snapshot. Create a
+      // custom exercise to reference, then clean it up in the finally block.
+      let exerciseId: string | undefined
+      let created: { id: string; name: string } | undefined
+      try {
+        const ex = await exerciseService.createExercise({
+          name: `strong-cli tpl ${newId()}`,
+          cellTypeConfigs: [{ cellType: 'REPS', mandatory: true }, { cellType: 'BARBELL_WEIGHT' }],
+          notes: 'created by the sc-ho9c live test',
+        })
+        exerciseId = ex.id
+
+        created = await templateService.createTemplate({
+          name: `strong-cli tpl ${newId()}`,
+          exercises: [{ exerciseId: ex.id, sets: [{ reps: 10, weight: 60 }] }],
+        })
+        let fresh = await sync.resync()
+        const createdOnServer = fresh.entities.template[created.id]
+        expect(createdOnServer).toMatchObject({ id: created.id, name: { custom: created.name } })
+        expect(createdOnServer?.isHidden).not.toBe(true)
+        // The template must be linked into a folder (default My Templates).
+        const folder = Object.values(fresh.entities.folder).find((f) =>
+          (f._links?.template as { href: string }[] | undefined)?.some(
+            (l) => l.href === `/api/users/${session.userId}/templates/${created.id}`,
+          ),
+        )
+        expect(folder).toBeDefined()
+
+        // rename -> verify
+        const renamed = `${created.name} renamed`
+        await templateService.updateTemplateName(created.id, renamed)
+        fresh = await sync.resync()
+        expect(fresh.entities.template[created.id]?.name).toEqual({ custom: renamed })
+      } finally {
+        if (created) {
+          await templateService.deleteTemplate(created.id)
+          const fresh = await sync.resync()
+          const deletedOnServer = fresh.entities.template[created.id]
+          expect(deletedOnServer === undefined || deletedOnServer.isHidden === true).toBe(true)
+          // The template must be unlinked from its folder.
+          const stillLinked = Object.values(fresh.entities.folder).some((f) =>
+            (f._links?.template as { href: string }[] | undefined)?.some(
+              (l) => l.href === `/api/users/${session.userId}/templates/${created.id}`,
+            ),
+          )
+          expect(stillLinked).toBe(false)
+        }
+        if (exerciseId) {
+          await exerciseService.archiveExercise(exerciseId)
         }
       }
     },

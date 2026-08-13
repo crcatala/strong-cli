@@ -181,6 +181,32 @@ Valid `--cell-type` values: `REPS`, `RPE`, `OTHER_WEIGHT`, `BARBELL_WEIGHT`,
 `DURATION`, `REST_TIMER`, `NOTE`. `--mandatory`/`--exponent` must be subsets
 of `--cell-type`.
 
+### Routine templates (opt-in write)
+
+Templates are **your** routine templates (the user doc's `template`
+collection). `create` builds a TEMPLATE log whose cellSetGroup is derived from
+each referenced exercise's `cellTypeConfigs` (REPS/RPE/weight cells + a
+trailing REST_TIMER set); weights are written canonically in kg. A new
+template is linked into a folder (`_links.template`) — the "My Templates"
+folder by default, or the folder given with `--folder`. `delete` soft-deletes
+the template and unlinks it from its folder. All three shapes were captured
+from real app traffic, so no post-write verification loop is needed.
+
+```bash
+# Create a template (opt-in write). Sets are reps[@weight][~rpe], weight in
+# your display unit; --exercise is repeatable.
+strong templates create "Push Day" --write \
+  --exercise ex-1:10@60,8@70~8 --exercise ex-2:12@40
+
+# Rename / delete (soft-delete + folder unlink) an existing template
+strong templates rename <template-id> "Leg Day" --write
+strong templates delete <template-id> --write
+```
+
+Exercises are referenced by id from your account (custom or global) and must
+exist in your snapshot — sync or create them first with
+`strong exercises create`. An unknown exercise id fails with a clean error.
+
 Live-test policy: mutation tests are gated behind both `RUN_LIVE_TESTS=1`
 **and** `RUN_LIVE_WRITE_TESTS=1`, and refuse to run unless the logged-in user
 matches `STRONG_DISPOSABLE_USER_ID` (see [Tests](#tests)).
