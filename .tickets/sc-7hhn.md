@@ -1,6 +1,6 @@
 ---
 id: sc-7hhn
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-08-13T00:16:39Z

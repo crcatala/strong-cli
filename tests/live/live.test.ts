@@ -27,10 +27,26 @@ import { COLLECTIONS, type Entity } from '../../src/write/types.js'
 import { WriteEngine } from '../../src/write/write-engine.js'
 import {
   ExerciseWriteService,
+  MeasuredValueWriteService,
   TemplateWriteService,
   WorkoutWriteService,
 } from '../../src/write/write-service.js'
 import { memStore } from './mem-store.js'
+import { createRateLimitedFetch } from './rate-limit.js'
+
+const liveDelayMs = Number.parseInt(process.env.STRONG_LIVE_DELAY_MS ?? '300', 10)
+const rateLimitedFetch = createRateLimitedFetch(
+  globalThis.fetch.bind(globalThis),
+  Number.isFinite(liveDelayMs) ? Math.max(100, liveDelayMs) : 300,
+)
+
+function liveClient(): StrongClient {
+  return new StrongClient({
+    baseUrl: 'https://back.strong.app',
+    store: memStore(),
+    fetch: rateLimitedFetch,
+  })
+}
 
 const RUN_LIVE = process.env['RUN_LIVE_TESTS'] === '1'
 // Writes need a second opt-in plus the expected disposable-account id. This
@@ -39,10 +55,7 @@ const RUN_LIVE_WRITES =
   process.env['RUN_LIVE_WRITE_TESTS'] === '1' && !!process.env['STRONG_DISPOSABLE_USER_ID']
 
 describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
-  const client = new StrongClient({
-    baseUrl: 'https://back.strong.app',
-    store: memStore(),
-  })
+  const client = liveClient()
 
   it('reaches the public measurements endpoint', async () => {
     const page = await client.getMeasurements(1)
@@ -51,10 +64,7 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
   })
 
   it('rejects bad credentials with AuthError', async () => {
-    const bad = new StrongClient({
-      baseUrl: 'https://back.strong.app',
-      store: memStore(),
-    })
+    const bad = liveClient()
     await expect(bad.login('[EMAIL]', 'definitely-wrong-password')).rejects.toBeInstanceOf(
       AuthError,
     )
@@ -68,7 +78,7 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
       return
     }
 
-    const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+    const client2 = liveClient()
     const session = await client2.login(username, password)
     expect(session.userId).toBeTruthy()
 
@@ -90,7 +100,7 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
       return
     }
 
-    const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+    const client2 = liveClient()
     const session = await client2.login(username, password)
 
     // Two small pages, walked explicitly (walkLogs has no "stop after N
@@ -153,7 +163,7 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
         throw new Error('Write live tests require credentials and STRONG_DISPOSABLE_USER_ID')
       }
 
-      const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+      const client2 = liveClient()
       const session = await client2.login(username, password)
       if (session.userId !== disposableUserId) {
         throw new Error(
@@ -221,7 +231,7 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
         throw new Error('Write live tests require credentials and STRONG_DISPOSABLE_USER_ID')
       }
 
-      const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+      const client2 = liveClient()
       const session = await client2.login(username, password)
       if (session.userId !== disposableUserId) {
         throw new Error(
@@ -288,7 +298,7 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
         throw new Error('Write live tests require credentials and STRONG_DISPOSABLE_USER_ID')
       }
 
-      const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+      const client2 = liveClient()
       const session = await client2.login(username, password)
       if (session.userId !== disposableUserId) {
         throw new Error(
@@ -356,7 +366,7 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
         throw new Error('Write live tests require credentials and STRONG_DISPOSABLE_USER_ID')
       }
 
-      const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+      const client2 = liveClient()
       const session = await client2.login(username, password)
       if (session.userId !== disposableUserId) {
         throw new Error(
@@ -452,7 +462,7 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
         throw new Error('Write live tests require credentials and STRONG_DISPOSABLE_USER_ID')
       }
 
-      const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+      const client2 = liveClient()
       const session = await client2.login(username, password)
       if (session.userId !== disposableUserId) {
         throw new Error(
@@ -530,6 +540,70 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
         }
         if (exerciseId) {
           await exerciseService.archiveExercise(exerciseId)
+        }
+      }
+    },
+    180_000,
+  )
+
+  it.skipIf(!RUN_LIVE_WRITES)(
+    'full body-measurement write flow through MeasuredValueWriteService: add -> delete, verified at each step',
+    async () => {
+      const username = process.env['STRONG_USERNAME'] ?? process.env['STRONG_USER']
+      const password = process.env['STRONG_PASSWORD']
+      const disposableUserId = process.env['STRONG_DISPOSABLE_USER_ID']
+      if (!username || !password || !disposableUserId) {
+        throw new Error('Write live tests require credentials and STRONG_DISPOSABLE_USER_ID')
+      }
+
+      const client2 = liveClient()
+      const session = await client2.login(username, password)
+      if (session.userId !== disposableUserId) {
+        throw new Error(
+          'Refusing write live test: logged-in user does not match STRONG_DISPOSABLE_USER_ID',
+        )
+      }
+
+      const snapshotPath = join(tmpdir(), `strong-live-measurement-svc-${Date.now()}.json`)
+      const sync = new SyncEngine({ client: client2, userId: session.userId, snapshotPath })
+      const engine = new WriteEngine({
+        refresh: () => sync.sync(),
+        put: (envelope) => client2.putEnvelope(session.userId, envelope),
+        persist: (s) => saveSnapshot(s, snapshotPath),
+      })
+      const service = new MeasuredValueWriteService({
+        engine,
+        clock: makeClock(),
+        userId: session.userId,
+        resync: () => sync.resync(),
+        reconcile: (fresh) => saveSnapshot(fresh, snapshotPath),
+      })
+
+      let created: { id: string; type: string } | undefined
+      try {
+        created = await service.logMeasurement('WEIGHT', 180)
+        let fresh = await sync.resync()
+        const createdOnServer = fresh.entities.measuredValue[created.id]
+        expect(createdOnServer).toMatchObject({
+          id: created.id,
+          measurementTypeValue: 'WEIGHT',
+        })
+        expect(createdOnServer?.isHidden).not.toBe(true)
+
+        const deleted = await service.deleteMeasurement(created.id)
+        expect(deleted.serverConfirmed).toBe(true)
+        fresh = await sync.resync()
+        const deletedOnServer = fresh.entities.measuredValue[created.id]
+        expect(deletedOnServer === undefined || deletedOnServer.isHidden === true).toBe(true)
+      } finally {
+        // deleteMeasurement is idempotent at the API level; retry cleanup if
+        // an assertion failed before the delete step completed.
+        if (created) {
+          const fresh = await sync.resync()
+          const remaining = fresh.entities.measuredValue[created.id]
+          if (remaining && remaining.isHidden !== true) {
+            await service.deleteMeasurement(created.id)
+          }
         }
       }
     },

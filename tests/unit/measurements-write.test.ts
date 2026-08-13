@@ -50,6 +50,20 @@ describe('measured value builder', () => {
     expect(entity.startDate).toBe(clock())
     expect(entity._links).toBeUndefined()
   })
+
+  it.each([
+    ['WEIGHT', 80, 80],
+    ['BODY_FAT_PERCENTAGE', 18, 0.18],
+    ['CALORIC_INTAKE', 2400, 2400],
+  ] as const)('builds %s values in the server representation', (type, input, expected) => {
+    const entity = buildMeasuredValue({ type, value: input, weightUnit: 'KILOGRAMS' }, 'user-1', {
+      clock,
+    })
+    expect(entity.measurementTypeValue).toBe(type)
+    expect(entity.value).toBe(expected)
+    expect(entity.isHidden).toBe(false)
+    expect(entity.startDate).toBe(clock())
+  })
 })
 
 describe('MeasuredValueWriteService', () => {

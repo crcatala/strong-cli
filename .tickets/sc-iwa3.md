@@ -1,6 +1,6 @@
 ---
 id: sc-iwa3
-status: in_progress
+status: closed
 deps: [sc-m3xf]
 links: []
 created: 2026-08-13T00:16:39Z
