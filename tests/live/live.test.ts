@@ -25,7 +25,11 @@ import { softDelete } from '../../src/write/soft-delete.js'
 import { SyncEngine } from '../../src/write/sync-engine.js'
 import { COLLECTIONS, type Entity } from '../../src/write/types.js'
 import { WriteEngine } from '../../src/write/write-engine.js'
-import { ExerciseWriteService, TemplateWriteService } from '../../src/write/write-service.js'
+import {
+  ExerciseWriteService,
+  TemplateWriteService,
+  WorkoutWriteService,
+} from '../../src/write/write-service.js'
 import { memStore } from './mem-store.js'
 
 const RUN_LIVE = process.env['RUN_LIVE_TESTS'] === '1'
