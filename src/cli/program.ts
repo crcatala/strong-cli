@@ -4,6 +4,7 @@ import { registerAuthCommand } from '../commands/auth.js'
 import { registerExercisesCommand } from '../commands/exercises.js'
 import { registerExportCommand } from '../commands/export.js'
 import { registerFoldersCommand } from '../commands/folders.js'
+import { registerMeasurementsCommand } from '../commands/measurements.js'
 import { registerStatsCommand } from '../commands/stats.js'
 import { registerTagsCommand } from '../commands/tags.js'
 import { registerTemplatesCommand } from '../commands/templates.js'
@@ -66,6 +67,7 @@ ${formatExample('strong exercises create "Hack Squat" --write --cell-type REPS,R
 ${formatExample('strong templates', 'List routine templates')}
 ${formatExample('strong folders', 'List template folders')}
 ${formatExample('strong tags', 'List exercise tags')}
+${formatExample('strong measurements', 'List body measurements')}
 ${formatExample('strong stats --weeks 12', 'Volume/set statistics')}
 ${formatExample('strong export -o strong-export.json', 'Export everything to JSON')}
 
@@ -113,6 +115,7 @@ ${ctx.colors.section('Environment Variables')}
 
   registerAuthCommand(program, ctx)
   registerWorkoutsCommand(program, ctx)
+  registerMeasurementsCommand(program, ctx)
   registerWorkoutCommand(program, ctx)
   registerExercisesCommand(program, ctx)
   registerTemplatesCommand(program, ctx)
