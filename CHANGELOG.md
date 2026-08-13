@@ -24,8 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     app traffic): it re-sends the log document with only the targeted cells
     rewritten (untouched cells preserved byte-for-byte) and then re-syncs
     server truth, reporting `serverConfirmed: true | false | undefined` in
-    plain and JSON output. Bad group/set indices or edits targeting a cell
-    type the set lacks fail with a clean `UsageError` before any PUT.
+    plain and JSON output. An unconfirmed edit is automatically reconciled to
+    pristine server truth (serialized on the write engine's tail) so the
+    optimistic snapshot cannot replay it into later writes. Bad group/set
+    indices or edits targeting a cell type the set lacks fail with a clean
+    `UsageError` before any PUT. `--reps` must be a positive integer; `--weight`
+    accepts 0 (clearing added load on bodyweight sets), matching set-spec
+    logging.
   - Set specs (`reps[@weight][~rpe]`) and `--exercise` parsing extracted to
     `src/commands/set-spec.ts`, shared with `strong templates create`.
   - Weight-cell type set shared between `log-builder.ts` and `edit.ts`

@@ -65,8 +65,9 @@ ${WORKOUT_WRITE_WARNING}
 
 Edit is an INFERRED write shape (reverse-engineered, never captured from real
 app traffic). The result reports serverConfirmed: true means Strong accepted
-the edit; false means the local view is optimistic and unverified (run the
-edit again or re-sync to reconcile); undefined means the confirmation re-sync
+the edit; false means Strong did not reflect it — the local snapshot is
+automatically re-synced to server truth so the unconfirmed edit cannot leak
+into later writes (re-run the edit); undefined means the confirmation re-sync
 failed.
 `
 
@@ -96,6 +97,9 @@ async function createWorkoutWriteService() {
     clock: makeClock(),
     userId: session.userId,
     resync: () => sync.resync(),
+    // An unconfirmed edit is reconciled to pristine server truth so the
+    // optimistic snapshot cannot replay it into later writes.
+    reconcile: (fresh) => saveSnapshot(fresh),
   })
 }
 
@@ -108,12 +112,6 @@ function parseSetTarget(spec: string): { groupIndex: number; setIndex: number } 
     )
   }
   return { groupIndex: Number.parseInt(m[1], 10), setIndex: Number.parseInt(m[2], 10) }
-}
-
-function parsePositiveNumber(flag: string, value: string): number {
-  const n = Number(value)
-  if (!Number.isFinite(n) || n <= 0) throw new UsageError(`Invalid ${flag}: ${value}`)
-  return n
 }
 
 /** Convert write-layer errors into clean UsageErrors with guidance. */
@@ -371,16 +369,29 @@ Write subcommands (each opt-in via --write):
           setIndex: target.setIndex,
         }
         if (options.reps !== undefined) {
-          if (!/^\d+$/.test(options.reps.trim())) {
+          const reps = Number(options.reps)
+          if (!Number.isInteger(reps) || reps <= 0) {
             throw new UsageError(`Invalid --reps: ${options.reps} (expected a positive integer)`)
           }
-          edit.reps = Number.parseInt(options.reps, 10)
+          edit.reps = reps
         }
         if (options.weight !== undefined) {
-          edit.weight = parsePositiveNumber('--weight', options.weight)
+          const weight = Number(options.weight)
+          // Weight 0 is valid: it clears added load on weighted-bodyweight /
+          // bodyweight sets (workout logging already permits 0 via set specs).
+          if (!Number.isFinite(weight) || weight < 0) {
+            throw new UsageError(
+              `Invalid --weight: ${options.weight} (expected a non-negative number)`,
+            )
+          }
+          edit.weight = weight
         }
         if (options.rpe !== undefined) {
-          edit.rpe = parsePositiveNumber('--rpe', options.rpe)
+          const rpe = Number(options.rpe)
+          if (!Number.isFinite(rpe) || rpe <= 0) {
+            throw new UsageError(`Invalid --rpe: ${options.rpe} (expected a positive number)`)
+          }
+          edit.rpe = rpe
         }
         if (edit.reps === undefined && edit.weight === undefined && edit.rpe === undefined) {
           throw new UsageError('specify at least one of --reps, --weight, --rpe')

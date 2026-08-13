@@ -248,8 +248,9 @@ and then re-syncs server truth to verify. Every `edit` result therefore
 reports `serverConfirmed`:
 
 - `true` — Strong accepted the edit (verified by re-sync);
-- `false` — the PUT returned 2xx but server truth does not reflect the edit
-  yet (the local view is optimistic; re-run the edit or re-sync to reconcile);
+- `false` — the PUT returned 2xx but server truth does not reflect the edit.
+  The local snapshot is **automatically re-synced to server truth** so the
+  unconfirmed edit cannot leak into later writes (re-run the edit to retry);
 - `undefined` — the confirmation re-sync itself failed.
 
 ```bash

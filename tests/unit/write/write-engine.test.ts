@@ -117,6 +117,41 @@ describe('WriteEngine', () => {
     expect(d.put).toHaveBeenCalledTimes(1)
   })
 
+  it('exclusive runs a task on the tail without refreshing or PUTting', async () => {
+    const d = deps()
+    const engine = new WriteEngine(d)
+    const order: string[] = []
+
+    const write = engine.write(() => {
+      order.push('write')
+      return { changes: [{ collection: 'log', entity: { id: 'log-1' } }], summary: 1 }
+    })
+    // Fires before the write resolves; must still run AFTER it (tail order).
+    const exclusive = engine.exclusive(async () => {
+      order.push('exclusive')
+      return 2
+    })
+
+    expect(await write).toBe(1)
+    expect(await exclusive).toBe(2)
+    expect(order).toEqual(['write', 'exclusive'])
+    expect(d.refresh).toHaveBeenCalledTimes(1)
+    expect(d.put).toHaveBeenCalledTimes(1)
+    expect(d.persist).toHaveBeenCalledTimes(1) // only the write's own persist
+  })
+
+  it('exclusive keeps the tail moving after a throwing task', async () => {
+    const d = deps()
+    const engine = new WriteEngine(d)
+    const failing = engine.exclusive(async () => {
+      throw new Error('verify failed')
+    })
+    const after = engine.exclusive(async () => 'ok')
+    await expect(failing).rejects.toThrow('verify failed')
+    await expect(after).resolves.toBe('ok')
+    expect(d.put).not.toHaveBeenCalled()
+  })
+
   it('sends all collections in the envelope (unchanged ones empty)', async () => {
     const d = deps()
     const engine = new WriteEngine(d)

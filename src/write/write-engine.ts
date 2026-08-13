@@ -44,6 +44,22 @@ export class WriteEngine {
     return run
   }
 
+  /**
+   * Queue a task on the serialized tail WITHOUT refreshing/building/PUTting.
+   * Used for post-write work (e.g. verifying an inferred shape and reconciling
+   * the snapshot) that must not interleave with another write's refresh — a
+   * reconcile that persisted while a later write was mid-flight could clobber
+   * that write's optimistic state.
+   */
+  exclusive<T>(fn: () => Promise<T> | T): Promise<T> {
+    const run = this.tail.then(fn, fn) // a prior failure must not block
+    this.tail = run.then(
+      () => {},
+      () => {},
+    )
+    return run
+  }
+
   private async runOne<T>(build: (snapshot: Snapshot) => BuildResult<T>): Promise<T> {
     const snapshot = await this.deps.refresh() // delta-sync; cross-links fresh
     const { changes, summary } = build(snapshot)

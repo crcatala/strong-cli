@@ -478,7 +478,11 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
       try {
         const ex = await exerciseService.createExercise({
           name: `strong-cli wkt ${newId()}`,
+          // Order-significant accepted signature (sc-ri38): a weight cell is
+          // REQUIRED here — the edit step below rewrites the weight cell, and
+          // buildLog only emits cells for configured cell types.
           cellTypeConfigs: [
+            { cellType: 'BARBELL_WEIGHT' },
             { cellType: 'REPS', mandatory: true },
             { cellType: 'RPE', isExponent: true },
           ],

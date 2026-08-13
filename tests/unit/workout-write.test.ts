@@ -339,6 +339,33 @@ describe('workout edit (opt-in write, INFERRED + verified)', () => {
     expect(puts).toHaveLength(0)
   })
 
+  it('rejects --reps 0 (not a positive integer)', async () => {
+    const { fetchImpl, puts } = writeFetch({ log: [workoutLog] })
+    const h = harness(tokenEnv(tmp))
+
+    await expect(
+      h.run(['workout', 'edit', 'w-1', '--set', '0:0', '--reps', '0', '--write'], fetchImpl),
+    ).rejects.toThrow(/Invalid --reps: 0/)
+    expect(puts).toHaveLength(0)
+  })
+
+  it('accepts --weight 0 (clearing added load on bodyweight sets)', async () => {
+    const { fetchImpl, puts } = editFetch({ echoEdit: true })
+    const h = harness(tokenEnv(tmp))
+
+    await h.run(
+      ['workout', 'edit', 'w-1', '--set', '0:0', '--weight', '0', '--write', '--plain'],
+      fetchImpl,
+    )
+
+    expect(h.out.join('')).toMatch(/serverConfirmed: true/)
+    const sent = puts[0].body._embedded.log[0]
+    const weight = sent._embedded.cellSetGroup[0].cellSets[0].cells.find(
+      (c: { cellType: string }) => c.cellType === 'BARBELL_WEIGHT',
+    )
+    expect(weight.value).toBe('0')
+  })
+
   it('fails cleanly for a malformed --set', async () => {
     const h = harness(tokenEnv(tmp))
     await expect(

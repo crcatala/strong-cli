@@ -391,13 +391,15 @@ function workoutDeps(s: Snapshot): WriteDeps & {
 
 function workoutService(
   d: WriteDeps,
-  resync: () => Promise<Snapshot> = async () => ({}) as Snapshot,
+  resync: () => Promise<Snapshot> = async () => emptySnapshot('user-1'),
+  reconcile?: (fresh: Snapshot) => Promise<void> | void,
 ): WorkoutWriteService {
   return new WorkoutWriteService({
     engine: new WriteEngine(d),
     clock,
     userId: 'user-1',
     resync,
+    ...(reconcile ? { reconcile } : {}),
   })
 }
 
@@ -576,5 +578,48 @@ describe('WorkoutWriteService.updateWorkoutSets (inferred + verified)', () => {
       workoutService(d).updateWorkoutSets('w-1', [{ groupIndex: 0, setIndex: 9, reps: 8 }]),
     ).rejects.toThrow(/out of range/)
     expect(d.put).not.toHaveBeenCalled()
+  })
+
+  it('reconciles the snapshot to pristine server truth when an edit is unconfirmed', async () => {
+    const s = workoutSnapshot({ logs: { 'w-1': seededWorkout() } })
+    const d = workoutDeps(s)
+    const reconcile = vi.fn(async () => {})
+    // Server truth still shows the OLD reps (edit did not land).
+    const stale = workoutSnapshot({ logs: { 'w-1': seededWorkout() } })
+    const res = await workoutService(d, async () => stale, reconcile).updateWorkoutSets('w-1', [
+      { groupIndex: 0, setIndex: 0, reps: 8 },
+    ])
+
+    expect(res.serverConfirmed).toBe(false)
+    // The optimistic (unconfirmed) edit must not stay in the persisted
+    // snapshot — it is replaced by pristine server truth.
+    expect(reconcile).toHaveBeenCalledTimes(1)
+    expect(reconcile.mock.calls[0][0]).toBe(stale)
+  })
+
+  it('does not reconcile when the edit is confirmed (optimistic == server truth)', async () => {
+    const s = workoutSnapshot({ logs: { 'w-1': seededWorkout() } })
+    const d = workoutDeps(s)
+    const reconcile = vi.fn(async () => {})
+    const res = await workoutService(d, async () => s, reconcile).updateWorkoutSets('w-1', [
+      { groupIndex: 0, setIndex: 0, reps: 8 },
+    ])
+    expect(res.serverConfirmed).toBe(true)
+    expect(reconcile).not.toHaveBeenCalled()
+  })
+
+  it('does not reconcile when the re-sync itself fails (serverConfirmed undefined)', async () => {
+    const s = workoutSnapshot({ logs: { 'w-1': seededWorkout() } })
+    const d = workoutDeps(s)
+    const reconcile = vi.fn(async () => {})
+    const res = await workoutService(
+      d,
+      async () => {
+        throw new Error('network down')
+      },
+      reconcile,
+    ).updateWorkoutSets('w-1', [{ groupIndex: 0, setIndex: 0, reps: 8 }])
+    expect(res.serverConfirmed).toBeUndefined()
+    expect(reconcile).not.toHaveBeenCalled()
   })
 })

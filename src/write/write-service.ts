@@ -196,6 +196,15 @@ export interface WorkoutWriteServiceOptions {
    * the write; a failed re-sync just leaves serverConfirmed undefined.
    */
   resync: () => Promise<Snapshot>
+  /**
+   * Persist pristine server truth after an UNCONFIRMED edit. Without this, an
+   * edit the server did not reflect would stay in the persisted snapshot and
+   * be replayed into later writes (the delta-sync continuation has already
+   * advanced past it). Runs on the engine's serialized tail so it cannot race
+   * another write. Optional — when omitted, an unconfirmed edit leaves the
+   * optimistic snapshot in place (callers should reconcile themselves).
+   */
+  reconcile?: (fresh: Snapshot) => Promise<void> | void
 }
 
 /**
@@ -209,6 +218,9 @@ export interface WorkoutWriteServiceOptions {
  * it re-sends the log document with only the targeted cells rewritten
  * (byte-for-byte preservation of untouched cells) and then re-syncs server
  * truth to confirm, reporting serverConfirmed: true | false | undefined.
+ * An unconfirmed edit is reconciled to pristine server truth (when a
+ * `reconcile` callback is provided) so the optimistic snapshot cannot replay
+ * it into later writes.
  */
 export class WorkoutWriteService {
   constructor(private readonly opts: WorkoutWriteServiceOptions) {}
@@ -260,10 +272,20 @@ export class WorkoutWriteService {
       sent = editSetCells(log, edits, { clock: this.opts.clock, weightUnit })
       return { changes: [{ collection: 'log', entity: sent }], summary: { id } }
     })
-    const fresh = await this.safeResync()
-    const serverConfirmed = fresh
-      ? verifySetCells(sent, fresh.entities.log[id], edits, { weightUnit })
-      : undefined
+
+    // Verify + reconcile on the serialized tail so no other write interleaves.
+    const serverConfirmed = await this.opts.engine.exclusive(async () => {
+      const fresh = await this.safeResync()
+      if (!fresh) return undefined
+      const confirmed = verifySetCells(sent, fresh.entities.log[id], edits, { weightUnit })
+      // An unconfirmed edit must not stay in the persisted snapshot, or later
+      // writes would build on (and replay) unverified data. Reconcile to the
+      // pristine server truth we just fetched.
+      if (!confirmed && this.opts.reconcile) {
+        await this.opts.reconcile(fresh)
+      }
+      return confirmed
+    })
     return { ...summary, serverConfirmed }
   }
 
