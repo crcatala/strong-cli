@@ -14,6 +14,10 @@
  *   $XDG_CONFIG_HOME/strong-cli (Linux) · ~/Library/Application Support/
  *   strong-cli (macOS) · %LOCALAPPDATA%/strong-cli (Windows)
  *
+ * Set STRONG_DISABLE_KEYRING=1 to force config-file-only behavior. This is
+ * primarily useful for hermetic tests and headless environments where a
+ * desktop keyring must not be consulted.
+ *
  * Env injection contract: config reads env through a module-global snapshot
  * (`setEnv`, used by run.ts at bootstrap and by tests). That state is
  * process-global, so any test calling `setEnv` MUST restore it in
@@ -111,7 +115,12 @@ async function getKeytar() {
  * session bus lets us skip keytar entirely (no import, no noise) and fall
  * back to the config file.
  */
+function keyringDisabled(): boolean {
+  return _env['STRONG_DISABLE_KEYRING'] === '1'
+}
+
 function hasSessionBus(): boolean {
+  if (keyringDisabled()) return false
   if (platform() !== 'linux') return true
   if (_env['DBUS_SESSION_BUS_ADDRESS']) return true
   const runtime = _env['XDG_RUNTIME_DIR']
