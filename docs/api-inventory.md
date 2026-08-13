@@ -5,8 +5,8 @@ Reverse-engineered map of the Strong backend REST API at `https://back.strong.ap
 **How it was discovered**: the iOS/Android app talks to this host. It is visible as the
 `iss`/`aud` claim of the login JWT and confirmed by five independent community clients
 (tolik518/strong-api-workout-sync, jerhinesmith/strong-mcp, TheAlexLichter/strong-exporter,
-pratyaksh123/strong-api, ivanvmoreno/strong-skill). Verified live for this spike
-(2026-08): the public measurements endpoint responds with 253 exercises.
+pratyaksh123/strong-api, ivanvmoreno/strong-skill). Verified live (2026-08): the
+public measurements endpoint responds with 253 exercises.
 
 > The older Parse-based backend (`ws13.strongapp.co/parse/...`, 2023-era, documented by
 > dmzoneill/strongapp-api) is **not** current; that repo was abandoned with account
@@ -39,7 +39,7 @@ pratyaksh123/strong-api, ivanvmoreno/strong-skill). Verified live for this spike
 | `GET` | `/api/users/{userId}/templates` | Bearer | Routine templates. |
 | `GET` | `/api/users/{userId}/logs/{logId}` | Bearer | Single log detail. |
 | `GET` | `/api/logs/{userId}` | Bearer | All logs for the user. |
-| `PUT` | `/api/users/{userId}` | Bearer | **Write** path (not used by this read-only spike): send an envelope `{id: userId, strongAnalytics: false, _embedded: {log: [...], template: [...], ...}}` with changed entities (see jerhinesmith/strong-mcp for the full protocol). |
+| `PUT` | `/api/users/{userId}` | Bearer | **Write** path (opt-in, behind `--write`): send an envelope `{id: userId, strongAnalytics: false, _embedded: {log: [...], template: [...], ...}}` with changed entities (see jerhinesmith/strong-mcp for the full protocol). Used by `strong exercises create/rename/archive`. |
 | `GET` | `/api/measurements?page=N` | **none** | **Public** — the global exercise definitions library (`253` total, `page`-based, 200/page). This powers `strong exercises` without auth. |
 
 ### Public resource list (from a user doc `_links`)

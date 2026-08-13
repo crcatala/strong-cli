@@ -55,7 +55,8 @@ POST /auth/login                         POST /auth/login/refresh
   `STRONG_CLIENT_BUILD`, `STRONG_CLIENT_PLATFORM`) exist for that day.
 - **Account termination**: the community's earlier Parse-based API work
   (dmzoneill/strongapp-api) resulted in explicit termination threats from Strong. Keep
-  usage personal, read-only, low-frequency. This spike performs zero writes.
+  usage personal, read-only, low-frequency. Writes are opt-in behind an explicit
+  `--write` flag and should only ever target a disposable test account.
 - **Soft rate limiting observed** (2026-08): several rapid bad logins started returning
   `{"Something went wrong. Please try again later."}` with HTTP 401 instead of the
   RFC 7807 body — a generic anti-abuse response. The client maps 401s to a clean

@@ -18,15 +18,20 @@ community-reverse-engineered endpoints. Use at your own risk.
 
 ## Setup
 
-> Not published to npm yet — install from source until then.
+Install from npm (requires Node.js `>=22`):
+
+```bash
+npm install -g @crcatala/strong-cli
+# or run without installing:
+npx @crcatala/strong-cli <command>
+```
+
+### Developing from source
 
 ```bash
 git clone https://github.com/crcatala/strong-cli
 cd strong-cli
 npm install
-
-# once published:
-# npm install -g @crcatala/strong-cli
 
 # fast dev (bun runs TS natively — ~85 ms startup)
 bun src/cli.ts <command>
@@ -228,7 +233,6 @@ strong export --json | jq .totals
 - `docs/api-inventory.md` — endpoint map, request/response shapes
 - `docs/auth-findings.md` — auth flow, token lifecycle, risks
 - `docs/data-model.md` — raw HAL model vs. normalized domain model
-- `PLAN.md` — design decisions, architecture, known risks, backlog
 - `RELEASING.md` — how to cut and publish a release
 - `captures/` — fixtures: public exercise library (real) + synthetic session/logs
 - API knowledge triangulated from `tolik518/strong-api-workout-sync`,
