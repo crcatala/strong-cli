@@ -181,10 +181,26 @@ strong exercises rename <exercise-id> "Hack Squat" --write
 strong exercises archive <exercise-id> --write
 ```
 
-Valid `--cell-type` values: `REPS`, `RPE`, `OTHER_WEIGHT`, `BARBELL_WEIGHT`,
-`DUMBBELL_WEIGHT`, `WEIGHTED_BODYWEIGHT`, `PLATE_WEIGHT`, `DISTANCE`,
-`DURATION`, `REST_TIMER`, `NOTE`. `--mandatory`/`--exponent` must be subsets
-of `--cell-type`.
+The server only accepts a fixed set of ordered `--cell-type` combinations for
+custom definitions (any other combination — including reordering — is rejected
+with HTTP 400 `CELL_TYPE_CONFIGS_NOT_SUPPORTED`, so the CLI fails fast with a
+clean error before PUTting):
+
+| `--cell-type` | Use case |
+|---|---|
+| `REPS` | reps only (e.g. bodyweight) |
+| `REPS,RPE` | strength with RPE |
+| `DURATION` | timed holds |
+| `DISTANCE,DURATION` | cardio |
+| `OTHER_WEIGHT,REPS,RPE` | machines with a generic weight cell |
+| `BARBELL_WEIGHT,REPS,RPE` | barbell lifts |
+| `DUMBBELL_WEIGHT,REPS,RPE` | dumbbell lifts |
+| `WEIGHTED_BODYWEIGHT,REPS,RPE` | weighted bodyweight (bands/chains) |
+| `ASSISTED_BODYWEIGHT,REPS,RPE` | assisted machines (dip/pull-up assist) |
+
+`PLATE_WEIGHT`, `REST_TIMER` and `NOTE` exist as app-wide cell types but are
+not accepted in custom exercise definitions. `--mandatory`/`--exponent` must
+be subsets of `--cell-type`.
 
 ### Routine templates (opt-in write)
 

@@ -17,6 +17,7 @@ import { describe, expect, it } from 'vitest'
 import { StrongClient } from '../../src/api/client.js'
 import type { RawLog } from '../../src/api/types.js'
 import { AuthError } from '../../src/cli/errors.js'
+import { buildExerciseDefinition } from '../../src/write/entity-builders.js'
 import { buildEnvelope } from '../../src/write/envelope.js'
 import { makeClock, newId } from '../../src/write/ids.js'
 import { saveSnapshot } from '../../src/write/snapshot-store.js'
@@ -201,6 +202,73 @@ describe.skipIf(!RUN_LIVE)('live: Strong backend', () => {
           const archivedOnServer = afterArchive.entities.measurement[created.id]
           expect(archivedOnServer === undefined || archivedOnServer.isHidden === true).toBe(true)
         }
+      }
+    },
+    180_000,
+  )
+
+  it.skipIf(!RUN_LIVE_WRITES)(
+    'accepts every documented custom-exercise cellTypeConfig signature (sc-ri38)',
+    async () => {
+      const username = process.env['STRONG_USERNAME'] ?? process.env['STRONG_USER']
+      const password = process.env['STRONG_PASSWORD']
+      const disposableUserId = process.env['STRONG_DISPOSABLE_USER_ID']
+      if (!username || !password || !disposableUserId) {
+        throw new Error('Write live tests require credentials and STRONG_DISPOSABLE_USER_ID')
+      }
+
+      const client2 = new StrongClient({ baseUrl: 'https://back.strong.app', store: memStore() })
+      const session = await client2.login(username, password)
+      if (session.userId !== disposableUserId) {
+        throw new Error(
+          'Refusing write live test: logged-in user does not match STRONG_DISPOSABLE_USER_ID',
+        )
+      }
+
+      // Every signature the CLI allows (src/commands/exercises.ts) must be
+      // accepted by the server — order-significant. Direct envelope PUTs, no
+      // resync; each accepted definition is archived immediately. Guards the
+      // probe-derived allowlist against silent backend changes.
+      const clock = makeClock()
+      const signatures = [
+        'REPS',
+        'REPS,RPE',
+        'DURATION',
+        'DISTANCE,DURATION',
+        'OTHER_WEIGHT,REPS,RPE',
+        'BARBELL_WEIGHT,REPS,RPE',
+        'DUMBBELL_WEIGHT,REPS,RPE',
+        'WEIGHTED_BODYWEIGHT,REPS,RPE',
+        'ASSISTED_BODYWEIGHT,REPS,RPE',
+      ]
+      for (const sig of signatures) {
+        const cellTypeConfigs = sig.split(',').map((cellType, index) => ({
+          cellType,
+          mandatory: cellType === 'REPS' && index === 0,
+          isExponent: cellType === 'RPE',
+          index,
+        }))
+        const entity = buildExerciseDefinition(
+          { name: `sc-ri38 sig ${newId()}`, cellTypeConfigs },
+          session.userId,
+          { clock },
+        )
+        try {
+          await client2.putEnvelope(
+            session.userId,
+            buildEnvelope(session.userId, [{ collection: 'measurement', entity }]),
+          )
+        } catch (err) {
+          throw new Error(
+            `server rejected documented signature ${sig}: ${err instanceof Error ? err.message : String(err)}`,
+          )
+        }
+        await client2.putEnvelope(
+          session.userId,
+          buildEnvelope(session.userId, [
+            { collection: 'measurement', entity: softDelete(entity, clock) },
+          ]),
+        )
       }
     },
     180_000,

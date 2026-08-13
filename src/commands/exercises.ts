@@ -27,9 +27,13 @@ import { WriteEngine } from '../write/write-engine.js'
 import { EntityNotFoundError, ExerciseWriteService } from '../write/write-service.js'
 
 /**
- * Cell types documented in docs/api-inventory.md plus the broader CellType
- * union in src/api/types.ts. Creating a definition with an unknown cell type
- * would produce an exercise the app cannot render, so we fail fast.
+ * Cell types the Strong backend accepts in CUSTOM exercise definitions.
+ * Probed live on a disposable account (sc-ri38): the broader app CellType
+ * union (src/api/types.ts) also contains PLATE_WEIGHT, REST_TIMER and NOTE,
+ * but the server rejects all three in custom definitions with HTTP 400
+ * CELL_TYPE_CONFIGS_NOT_SUPPORTED (PLATE_WEIGHT additionally fails entity
+ * parsing with INVALID_DATA and appears in no public-library exercise).
+ * ASSISTED_BODYWEIGHT is accepted and was missing from the old allowlist.
  */
 const EXERCISE_CELL_TYPES = new Set([
   'REPS',
@@ -38,11 +42,29 @@ const EXERCISE_CELL_TYPES = new Set([
   'BARBELL_WEIGHT',
   'DUMBBELL_WEIGHT',
   'WEIGHTED_BODYWEIGHT',
-  'PLATE_WEIGHT',
+  'ASSISTED_BODYWEIGHT',
   'DISTANCE',
   'DURATION',
-  'REST_TIMER',
-  'NOTE',
+])
+
+/**
+ * Ordered cell-type signatures the server accepts for custom exercise
+ * definitions. Order is significant: the server matches the exact sequence
+ * (REPS,RPE is accepted, RPE,REPS is rejected with
+ * CELL_TYPE_CONFIGS_NOT_SUPPORTED). Derived from the 8 signatures present in
+ * the public exercise library (253 exercises) plus single REPS, all
+ * confirmed by live create+archive probes on a disposable account.
+ */
+const EXERCISE_CELL_TYPE_SIGNATURES = new Set([
+  'REPS',
+  'REPS,RPE',
+  'DURATION',
+  'DISTANCE,DURATION',
+  'OTHER_WEIGHT,REPS,RPE',
+  'BARBELL_WEIGHT,REPS,RPE',
+  'DUMBBELL_WEIGHT,REPS,RPE',
+  'WEIGHTED_BODYWEIGHT,REPS,RPE',
+  'ASSISTED_BODYWEIGHT,REPS,RPE',
 ])
 
 /**
@@ -75,10 +97,17 @@ function parseCellTypes(raw: string): string[] {
     if (seen.has(t)) throw new UsageError(`Duplicate cell type "${t}" in --cell-type`)
     if (!EXERCISE_CELL_TYPES.has(t)) {
       throw new UsageError(
-        `Unknown cell type "${t}" — valid types: ${[...EXERCISE_CELL_TYPES].join(', ')}`,
+        `Unsupported cell type "${t}" — custom exercise definitions support: ${[...EXERCISE_CELL_TYPES].join(', ')}`,
       )
     }
     seen.add(t)
+  }
+  const signature = tokens.join(',')
+  if (!EXERCISE_CELL_TYPE_SIGNATURES.has(signature)) {
+    throw new UsageError(
+      `Unsupported cell-type combination "${signature}" — the server only accepts these ` +
+        `ordered combinations: ${[...EXERCISE_CELL_TYPE_SIGNATURES].join(', ')}. Order matters.`,
+    )
   }
   return tokens
 }
@@ -223,12 +252,24 @@ Examples:
     .command('create <name>')
     .description('Create a custom exercise definition (opt-in write)')
     .option('--write', 'Acknowledge the ToS/risk warning and enable this write')
-    .requiredOption('--cell-type <types>', 'Comma-separated cell types, e.g. REPS,RPE')
+    .requiredOption(
+      '--cell-type <types>',
+      'Ordered cell types, e.g. REPS,RPE — server-supported combos only',
+    )
     .option('--mandatory <types>', 'Comma-separated subset of --cell-type that is mandatory')
     .option('--exponent <types>', 'Comma-separated subset of --cell-type that is exponent (RPE)')
     .option('--notes <text>', 'Instructions/notes for the exercise')
     .option('--tag <id>', 'Attach a tag by id (repeatable)', collectTag, [] as string[])
     .addHelpText('after', WRITE_WARNING)
+    .addHelpText(
+      'after',
+      `
+Supported --cell-type combinations (order matters — the server rejects any
+other combination with HTTP 400 CELL_TYPE_CONFIGS_NOT_SUPPORTED):
+  ${[...EXERCISE_CELL_TYPE_SIGNATURES].join('\n  ')}
+
+--mandatory/--exponent must be subsets of --cell-type.`,
+    )
     .action(
       async (
         name: string,

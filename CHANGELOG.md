@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `strong exercises create` now validates `--cell-type` against the exact
+  ordered signatures the backend accepts for custom exercise definitions
+  (sc-ri38, found via live probes on a disposable account). Any other
+  combination — e.g. `REPS,BARBELL_WEIGHT`, reordered `RPE,REPS`, or the
+  app-wide-only cell types `PLATE_WEIGHT`/`REST_TIMER`/`NOTE` — fails fast
+  with a clean `UsageError` before any PUT instead of surfacing the server's
+  opaque HTTP 400 `CELL_TYPE_CONFIGS_NOT_SUPPORTED`. `ASSISTED_BODYWEIGHT`
+  was added to the supported set (it was missing but the server accepts it).
+  Supported combos documented in `README.md` and `docs/api-inventory.md`.
+
 ### Added
 
 - Opt-in write commands for routine templates (sc-ho9c):

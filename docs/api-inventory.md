@@ -71,3 +71,14 @@ curl -s "https://back.strong.app/api/users/{userId}?limit=200&continuation=&incl
 - `/api/measurements` ignores `continuation`; use `page`.
 - Users' weight preferences are in `preferences.weightUnit[userId]` (`KILOGRAMS` /
   `POUNDS`); set weights in logs arrive in that unit (passthrough in this spike).
+- Custom exercise creation (`strong exercises create`) accepts only a fixed set
+  of **ordered** `cellTypeConfigs` signatures; anything else is rejected with
+  HTTP 400 `CELL_TYPE_CONFIGS_NOT_SUPPORTED` (probed live 2026-08 on a
+  disposable account; matches the 8 signatures found in the public library,
+  plus single `REPS`): `REPS`, `REPS,RPE`, `DURATION`, `DISTANCE,DURATION`,
+  and `<weight>,REPS,RPE` where `<weight>` is `OTHER_WEIGHT | BARBELL_WEIGHT |
+  DUMBBELL_WEIGHT | WEIGHTED_BODYWEIGHT | ASSISTED_BODYWEIGHT`. Order is
+  significant (`RPE,REPS` is rejected). `PLATE_WEIGHT` fails entity parsing
+  (`INVALID_DATA`) and appears in no public-library exercise;
+  `REST_TIMER`/`NOTE` are rejected in custom definitions. `mandatory`/
+  `isExponent` flags do not affect acceptance.

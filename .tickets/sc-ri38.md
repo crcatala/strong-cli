@@ -1,6 +1,6 @@
 ---
 id: sc-ri38
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-08-13T04:13:37Z
@@ -23,3 +23,9 @@ Work: probe the server for the exact supported set (create + archive throwaway d
 
 exercises create with a server-unsupported cellTypeConfig combo fails fast with a UsageError before any PUT; supported set documented in README + api-inventory.md; all unit + live tests green.
 
+
+## Notes
+
+**2026-08-13T04:55:45Z**
+
+Implemented: tightened exercises create --cell-type validation to the server's exact accepted set. Probed live on the disposable account (toshi.collab): the backend accepts only 9 ORDERED signatures — REPS; REPS,RPE; DURATION; DISTANCE,DURATION; and <weight>,REPS,RPE for weight in {OTHER_WEIGHT, BARBELL_WEIGHT, DUMBBELL_WEIGHT, WEIGHTED_BODYWEIGHT, ASSISTED_BODYWEIGHT}. Order is significant (RPE,REPS rejected); mandatory/isExponent flags do not affect acceptance. PLATE_WEIGHT fails entity parsing (INVALID_DATA) and appears in no public-library exercise; REST_TIMER/NOTE are rejected in custom defs. CLI now fails fast with a clean UsageError before any PUT (src/commands/exercises.ts: EXERCISE_CELL_TYPES narrowed + EXERCISE_CELL_TYPE_SIGNATURES allowlist; ASSISTED_BODYWEIGHT added — it was missing but is accepted). Docs updated (README supported-combos table, docs/api-inventory.md gotcha). Tests: 4 new unit tests (combo/order/app-only rejection, weight-first + cardio/machine acceptance); new live regression test asserting all 9 signatures are accepted (create+archive, no resync). Unit (230) + live (8) + verify all green.

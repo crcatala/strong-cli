@@ -208,8 +208,116 @@ describe('exercises create (opt-in write)', () => {
 
     await expect(
       h.run(['exercises', 'create', 'Weird', '--write', '--cell-type', 'NOPE'], fetchImpl),
-    ).rejects.toThrow(/Unknown cell type "NOPE"/)
+    ).rejects.toThrow(/Unsupported cell type "NOPE"/)
     expect(puts).toHaveLength(0)
+  })
+
+  it('rejects app-only cell types the server refuses in custom definitions (PLATE_WEIGHT, REST_TIMER, NOTE)', async () => {
+    const { fetchImpl, puts } = writeFetch()
+    const h = harness(tokenEnv(tmp))
+
+    for (const cellType of ['PLATE_WEIGHT', 'REST_TIMER', 'NOTE']) {
+      await expect(
+        h.run(['exercises', 'create', 'X', '--write', '--cell-type', cellType], fetchImpl),
+      ).rejects.toThrow(new RegExp(`Unsupported cell type "${cellType}"`))
+    }
+    expect(puts).toHaveLength(0)
+  })
+
+  it('rejects server-unsupported cell-type combos before any PUT (sc-ri38)', async () => {
+    const { fetchImpl, puts } = writeFetch()
+    const h = harness(tokenEnv(tmp))
+
+    // REPS + a weight cell in this order is rejected by the backend with
+    // CELL_TYPE_CONFIGS_NOT_SUPPORTED — the CLI must fail fast instead.
+    await expect(
+      h.run(
+        ['exercises', 'create', 'X', '--write', '--cell-type', 'REPS,BARBELL_WEIGHT'],
+        fetchImpl,
+      ),
+    ).rejects.toThrow(/Unsupported cell-type combination "REPS,BARBELL_WEIGHT"/)
+
+    // Order matters: the server only accepts REPS,RPE, not RPE,REPS.
+    await expect(
+      h.run(['exercises', 'create', 'X', '--write', '--cell-type', 'RPE,REPS'], fetchImpl),
+    ).rejects.toThrow(/Unsupported cell-type combination "RPE,REPS"/)
+
+    // Shortened machine signature without RPE.
+    await expect(
+      h.run(
+        ['exercises', 'create', 'X', '--write', '--cell-type', 'ASSISTED_BODYWEIGHT,REPS'],
+        fetchImpl,
+      ),
+    ).rejects.toThrow(/Unsupported cell-type combination "ASSISTED_BODYWEIGHT,REPS"/)
+
+    expect(puts).toHaveLength(0)
+  })
+
+  it('accepts every server-supported weight-first signature', async () => {
+    const { fetchImpl, puts } = writeFetch()
+    const h = harness(tokenEnv(tmp))
+
+    await h.run(
+      [
+        'exercises',
+        'create',
+        'Squat',
+        '--write',
+        '--cell-type',
+        'BARBELL_WEIGHT,REPS,RPE',
+        '--mandatory',
+        'REPS',
+        '--exponent',
+        'RPE',
+        '--plain',
+      ],
+      fetchImpl,
+    )
+
+    expect(h.out.join('')).toMatch(/created exercise "Squat"/)
+    expect(puts).toHaveLength(1)
+    const sent = puts[0].body._embedded.measurement[0]
+    expect(sent.cellTypeConfigs).toEqual([
+      { cellType: 'BARBELL_WEIGHT', mandatory: false, isExponent: false, index: 0 },
+      { cellType: 'REPS', mandatory: true, isExponent: false, index: 1 },
+      { cellType: 'RPE', mandatory: false, isExponent: true, index: 2 },
+    ])
+  })
+
+  it('accepts cardio and machine signatures (DURATION, DISTANCE,DURATION, ASSISTED_BODYWEIGHT,REPS,RPE)', async () => {
+    const { fetchImpl, puts } = writeFetch()
+    const h = harness(tokenEnv(tmp))
+
+    await h.run(
+      ['exercises', 'create', 'Plank', '--write', '--cell-type', 'DURATION', '--plain'],
+      fetchImpl,
+    )
+    await h.run(
+      ['exercises', 'create', 'Row', '--write', '--cell-type', 'DISTANCE,DURATION', '--plain'],
+      fetchImpl,
+    )
+    await h.run(
+      [
+        'exercises',
+        'create',
+        'Assisted Dip',
+        '--write',
+        '--cell-type',
+        'ASSISTED_BODYWEIGHT,REPS,RPE',
+        '--plain',
+      ],
+      fetchImpl,
+    )
+
+    expect(puts).toHaveLength(3)
+    const cells = puts.map((p) =>
+      p.body._embedded.measurement[0].cellTypeConfigs.map((c: { cellType: string }) => c.cellType),
+    )
+    expect(cells).toEqual([
+      ['DURATION'],
+      ['DISTANCE', 'DURATION'],
+      ['ASSISTED_BODYWEIGHT', 'REPS', 'RPE'],
+    ])
   })
 
   it('rejects duplicate cell types and empty lists', async () => {
