@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `strong login` now resolves the username independently of the password and
+  falls back to the stored session's username (env -> config -> keyring),
+  prompting interactively on a TTY as a final fallback. Previously it required
+  `STRONG_USERNAME` whenever `STRONG_PASSWORD` was set and failed with
+  "Missing username" even when a session already existed.
+
 ## [0.2.0] - 2026-08-13
 
 ### Added
