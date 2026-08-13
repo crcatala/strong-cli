@@ -2,7 +2,7 @@
 import Table from 'cli-table3'
 import type { Command } from 'commander'
 import { createClient } from '../api/factory.js'
-import type { MeasuredValue } from '../api/types.js'
+import type { MeasuredValue, UserResponse } from '../api/types.js'
 import type { CliContext } from '../cli/context.js'
 import { AuthError, UsageError } from '../cli/errors.js'
 import { logVerbose, logWarning, output } from '../cli/output.js'
@@ -71,9 +71,14 @@ function displayValue(
   measurement: MeasuredValue,
   weightUnit: WeightUnit,
 ): { value: number; unit: string } {
-  if (measurement.type === 'WEIGHT')
-    return { value: weightToDisplay(measurement.value, weightUnit), unit: weightLabel(weightUnit) }
-  if (measurement.type === 'BODY_FAT_PERCENTAGE') return { value: measurement.value, unit: '%' }
+  if (measurement.measurementTypeValue === 'WEIGHT')
+    return {
+      value: Math.round(weightToDisplay(measurement.value, weightUnit) * 10) / 10,
+      unit: weightLabel(weightUnit),
+    }
+  if (measurement.measurementTypeValue === 'BODY_FAT_PERCENTAGE') {
+    return { value: Math.round(measurement.value * 1000) / 10, unit: '%' }
+  }
   return { value: measurement.value, unit: 'kcal' }
 }
 
@@ -107,17 +112,15 @@ ${WRITE_WARNING}`,
       if (!session) throw new AuthError('Not authenticated — run `strong auth login` first')
       const filter = options.type ? parseType(options.type) : undefined
       logVerbose(ctx, 'Fetching body measurements...')
-      const response = await client.getUserMeasurements(session.userId)
-      const weightUnit = resolveWeightUnit(
-        (response as { preferences?: { weightUnit?: Record<string, string> } }).preferences
-          ?.weightUnit?.[session.userId],
-      )
-      const rows = ((response._embedded?.measuredValue ?? []) as MeasuredValue[])
-        .filter((m) => m.isHidden !== true && (!filter || m.type === filter))
+      const response = await client.getUser(session.userId, { includes: ['measuredValue'] })
+      const weightUnit = resolveWeightUnit(response.preferences?.weightUnit?.[session.userId])
+      const rows = ((response as UserResponse)._embedded?.measuredValue ?? [])
+        .filter((m) => m.isHidden !== true && (!filter || m.measurementTypeValue === filter))
         .map((m) => ({
           id: m.id,
-          type: m.type,
+          type: m.measurementTypeValue,
           ...displayValue(m, weightUnit),
+          date: m.startDate,
           created: m.created,
           lastChanged: m.lastChanged,
         }))
@@ -132,7 +135,8 @@ ${WRITE_WARNING}`,
             head: ['Type', 'Value', 'ID', 'Created'],
             style: { head: [], border: [] },
           })
-          for (const r of rows) table.push([r.type, `${r.value} ${r.unit}`, r.id, r.created ?? '—'])
+          for (const r of rows)
+            table.push([r.type, `${r.value} ${r.unit}`, r.id, r.date ?? r.created ?? '—'])
           return table.toString()
         },
       })

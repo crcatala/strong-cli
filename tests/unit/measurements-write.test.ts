@@ -46,7 +46,9 @@ describe('measured value builder', () => {
       { clock },
     )
     expect(entity.value).toBeCloseTo(99.7903, 3)
-    expect(entity._links).toEqual({ user: { href: '/api/users/user-1' } })
+    expect(entity.measurementTypeValue).toBe('WEIGHT')
+    expect(entity.startDate).toBe(clock())
+    expect(entity._links).toBeUndefined()
   })
 })
 
@@ -59,8 +61,8 @@ describe('MeasuredValueWriteService', () => {
     )
     expect(result.type).toBe('BODY_FAT_PERCENTAGE')
     expect(sentEntity(d)).toMatchObject({
-      type: 'BODY_FAT_PERCENTAGE',
-      value: 18,
+      measurementTypeValue: 'BODY_FAT_PERCENTAGE',
+      value: 0.18,
       isHidden: false,
     })
   })
@@ -68,7 +70,6 @@ describe('MeasuredValueWriteService', () => {
   it('soft-deletes and reports server confirmation', async () => {
     const d = deps({ 'mv-1': { id: 'mv-1', type: 'WEIGHT', value: 80, isHidden: false } })
     const fresh = emptySnapshot('user-1')
-    fresh.entities.measuredValue['mv-1'] = { id: 'mv-1', isHidden: true }
     const result = await service(d, async () => fresh).deleteMeasurement('mv-1')
     expect(result).toEqual({ id: 'mv-1', serverConfirmed: true })
     expect(sentEntity(d)).toMatchObject({

@@ -46,17 +46,22 @@ export interface MeasuredValueInput {
 /** Build a body-measurement entity for the user-doc envelope. */
 export function buildMeasuredValue(
   input: MeasuredValueInput,
-  userId: string,
+  _userId: string,
   deps: { clock: Clock },
 ): Entity {
   const ts = deps.clock()
-  const value = input.type === 'WEIGHT' ? weightToKg(input.value, input.weightUnit) : input.value
+  const value =
+    input.type === 'WEIGHT'
+      ? weightToKg(input.value, input.weightUnit)
+      : input.type === 'BODY_FAT_PERCENTAGE'
+        ? input.value / 100
+        : input.value
   return {
     id: newId(),
-    type: input.type,
+    measurementTypeValue: input.type,
     value,
+    startDate: ts,
     isHidden: false,
-    _links: { user: { href: `/api/users/${userId}` } },
     created: ts,
     lastChanged: ts,
   }

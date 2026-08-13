@@ -83,7 +83,8 @@ export class MeasuredValueWriteService {
     const serverConfirmed = await this.opts.engine.exclusive(async () => {
       const fresh = await this.safeResync()
       if (!fresh) return undefined
-      const confirmed = fresh.entities.measuredValue[id]?.isHidden === true
+      const after = fresh.entities.measuredValue[id]
+      const confirmed = after === undefined || after.isHidden === true
       if (!confirmed && this.opts.reconcile) await this.opts.reconcile(fresh)
       return confirmed
     })

@@ -78,9 +78,10 @@ export interface Measurement {
 
 export interface MeasuredValue {
   id: string
-  type: string
+  measurementTypeValue: string
   value: number
   isHidden?: boolean
+  startDate?: string
   created?: string
   lastChanged?: string
   _links?: { user?: Link; [rel: string]: unknown }
@@ -186,7 +187,7 @@ export interface UserResponse {
     tag?: Tag[]
     folder?: Folder[]
     widget?: unknown[]
-    measuredValue?: unknown[]
+    measuredValue?: MeasuredValue[]
     [k: string]: unknown
   }
   username?: string
