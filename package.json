@@ -71,7 +71,7 @@
     "@biomejs/biome": "^2.0.0",
     "@release-it/keep-a-changelog": "^8.0.0",
     "@types/node": "^22.0.0",
-    "@vitest/coverage-v8": "^2.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
     "release-it": "^21.0.1",
     "tsx": "^4.0.0",
     "typescript": "^5.5.0",
