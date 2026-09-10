@@ -35,6 +35,31 @@ describe('privacy-safe HTTP statistics', () => {
     expect(serialized).not.toContain('initial-token')
   })
 
+  it('counts an attempt even when reading its response body fails', async () => {
+    const stats = new HttpStats()
+    const bodyFailure = new Error('response stream interrupted')
+    const client = new StrongClient({
+      baseUrl: 'https://back.strong.app',
+      store: store(),
+      httpStats: stats,
+      fetch: vi.fn(
+        async () =>
+          ({
+            status: 200,
+            ok: true,
+            text: async () => Promise.reject(bodyFailure),
+          }) as unknown as Response,
+      ),
+    })
+
+    await expect(client.getUser('private-user')).rejects.toBe(bodyFailure)
+    expect(stats.report()).toMatchObject({
+      attempts: 1,
+      responseBytes: 0,
+      routes: { 'user-metadata': { attempts: 1, statuses: { '200': 1 } } },
+    })
+  })
+
   it('counts a 401 retry and its token refresh as real attempts', async () => {
     const stats = new HttpStats()
     const freshToken = futureJwt(1200, 'private-user', 'fresh-token')
@@ -108,5 +133,6 @@ describe('privacy-safe HTTP statistics', () => {
     expect(classifyHttpRoute('https://back.strong.app/api/users/user-123/logs/log-456')).toBe(
       'user-log-detail',
     )
+    expect(classifyHttpRoute('not a valid URL')).toBe('unknown')
   })
 })

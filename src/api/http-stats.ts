@@ -30,14 +30,17 @@ export class HttpStats {
     this.startedAt = now()
   }
 
-  recordAttempt(route: HttpRoute, status: number | undefined, responseBytes = 0): void {
+  recordAttempt(route: HttpRoute, status: number | undefined): void {
     this.attempts++
-    this.responseBytes += responseBytes
     const entry = this.routes.get(route) ?? { attempts: 0, statuses: new Map<string, number>() }
     entry.attempts++
     const statusLabel = status === undefined ? 'network_error' : String(status)
     entry.statuses.set(statusLabel, (entry.statuses.get(statusLabel) ?? 0) + 1)
     this.routes.set(route, entry)
+  }
+
+  recordResponseBytes(responseBytes: number): void {
+    this.responseBytes += responseBytes
   }
 
   recordRetry(): void {
@@ -70,16 +73,20 @@ export class HttpStats {
  * path parameters or query values here: this output is intended for sharing.
  */
 export function classifyHttpRoute(url: string): HttpRoute {
-  const parsed = new URL(url)
-  const path = parsed.pathname
-  if (path === '/auth/login') return 'auth-login'
-  if (path === '/auth/login/refresh') return 'auth-refresh'
-  if (path === '/api/measurements') return 'global-measurements'
-  if (/^\/api\/users\/[^/]+\/logs\/[^/]+$/.test(path)) return 'user-log-detail'
-  if (/^\/api\/users\/[^/]+\/measurements$/.test(path)) return 'user-measurements'
-  if (/^\/api\/users\/[^/]+$/.test(path)) {
-    return parsed.searchParams.getAll('include').includes('log') ? 'logs-page' : 'user-metadata'
+  try {
+    const parsed = new URL(url)
+    const path = parsed.pathname
+    if (path === '/auth/login') return 'auth-login'
+    if (path === '/auth/login/refresh') return 'auth-refresh'
+    if (path === '/api/measurements') return 'global-measurements'
+    if (/^\/api\/users\/[^/]+\/logs\/[^/]+$/.test(path)) return 'user-log-detail'
+    if (/^\/api\/users\/[^/]+\/measurements$/.test(path)) return 'user-measurements'
+    if (/^\/api\/users\/[^/]+$/.test(path)) {
+      return parsed.searchParams.getAll('include').includes('log') ? 'logs-page' : 'user-metadata'
+    }
+    if (/^\/api\/logs\/[^/]+$/.test(path)) return 'logs-page'
+  } catch {
+    // Diagnostics must never replace the original request failure.
   }
-  if (/^\/api\/logs\/[^/]+$/.test(path)) return 'logs-page'
   return 'unknown'
 }

@@ -187,8 +187,9 @@ export class StrongClient {
         `Network error while contacting ${this.baseUrl}: ${err instanceof Error ? err.message : String(err)}`,
       )
     }
+    this.opts.httpStats?.recordAttempt('auth-login', response.status)
     const text = await response.text()
-    this.opts.httpStats?.recordAttempt('auth-login', response.status, Buffer.byteLength(text))
+    this.opts.httpStats?.recordResponseBytes(Buffer.byteLength(text))
 
     if (response.status === 401 || response.status === 403) {
       throw new AuthError('Login failed: invalid email/username or password (401)')
@@ -251,16 +252,10 @@ export class StrongClient {
       throw err
     }
 
-    if (response.status === 204) {
-      this.opts.httpStats?.recordAttempt(classifyHttpRoute(url), response.status)
-      return undefined
-    }
+    this.opts.httpStats?.recordAttempt(classifyHttpRoute(url), response.status)
+    if (response.status === 204) return undefined
     const text = await response.text()
-    this.opts.httpStats?.recordAttempt(
-      classifyHttpRoute(url),
-      response.status,
-      Buffer.byteLength(text),
-    )
+    this.opts.httpStats?.recordResponseBytes(Buffer.byteLength(text))
     if (response.ok) {
       return text ? JSON.parse(text) : undefined
     }
