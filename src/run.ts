@@ -1,4 +1,5 @@
 import { CommanderError } from 'commander'
+import { configureHttpStats } from './api/factory.js'
 import { createContext, type OutputFormat } from './cli/context.js'
 import { setOutputStream } from './cli/output.js'
 import { createProgram } from './cli/program.js'
@@ -21,6 +22,7 @@ export async function runCli(
 
   setOutputStream(stdout, stderr)
   setEnv(env)
+  const httpStats = configureHttpStats(env['STRONG_HTTP_STATS'] === '1')
 
   const defaultFormat = env['STRONG_FORMAT'] as OutputFormat | undefined
   const ctx = createContext(argv, env, defaultFormat)
@@ -43,5 +45,11 @@ export async function runCli(
       }
     }
     throw error
+  } finally {
+    if (httpStats) {
+      // A single JSON line is concise, machine-readable, and contains only
+      // fixed route labels plus aggregate counts.
+      stderr.write(`strong http stats: ${JSON.stringify(httpStats.report())}\n`)
+    }
   }
 }

@@ -328,6 +328,24 @@ strong export --json | jq .totals
 | `--quiet` | Bare IDs only |
 | `--verbose` / `--debug` | Operational progress / diagnostics on stderr |
 
+## Privacy-safe HTTP statistics
+
+Set `STRONG_HTTP_STATS=1` to append one aggregate JSON report to **stderr** when
+an invocation finishes. This is useful for diagnosing rate limits and auth
+refreshes while preserving `--json` output on stdout for pipes and scripts.
+
+```bash
+STRONG_HTTP_STATS=1 strong export --json > workouts.json
+# stderr: strong http stats: {"attempts":12,"retries":2,"tokenRefreshes":1,...}
+```
+
+The report includes actual HTTP attempts (including retries and token refreshes),
+fixed endpoint categories, status codes, received response-byte totals, and
+elapsed time. It deliberately never includes URLs, query strings, identifiers,
+headers, tokens, or request/response bodies. Do not add raw transport or body
+logging when troubleshooting: those values can contain account data and
+credentials.
+
 ## Environment variables
 
 | Var | Purpose |
@@ -340,6 +358,7 @@ strong export --json | jq .totals
 | `STRONG_MAX_RETRIES` | Retries for transient errors, 5xx + 429 (default 2) |
 | `STRONG_RETRY_BACKOFF_MS` | Base retry backoff in ms, jittered per attempt (default 250) |
 | `STRONG_FULL_SYNC_INTERVAL_DAYS` | Days between automatic full cache re-syncs (default 30) |
+| `STRONG_HTTP_STATS` | Set to `1` for privacy-safe aggregate HTTP statistics on stderr |
 | `STRONG_FORMAT` | Default output format |
 | `STRONG_DISPOSABLE_USER_ID` | Guard for write live tests — refuse mutations unless the logged-in user matches |
 | `NO_COLOR` | Disable colors |
