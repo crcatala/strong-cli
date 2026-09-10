@@ -28,14 +28,14 @@ afterEach(() => rmSync(tmp, { recursive: true, force: true }))
 
 const store: TokenStore = { read: async () => null, write: async () => undefined }
 
-function client(fetchImpl: typeof globalThis.fetch, stats?: HttpStats) {
+function client(fetchImpl: typeof globalThis.fetch, stats?: HttpStats, path = cachePath()) {
   return new StrongClient({
     baseUrl,
     store,
     fetch: fetchImpl,
     now: () => now,
     httpStats: stats,
-    globalMeasurementsCachePath: cachePath(),
+    globalMeasurementsCachePath: path,
   })
 }
 
@@ -61,8 +61,10 @@ describe('global measurements cache record', () => {
     expect(loadGlobalMeasurementsCache(baseUrl, now, undefined, cachePath())).toBeNull()
   })
 
-  it('treats corrupt records as misses and recognizes expiry', () => {
+  it('treats corrupt and future-dated records as misses and recognizes expiry', () => {
     writeFileSync(cachePath(), '{bad json')
+    expect(loadGlobalMeasurementsCache(baseUrl, now, undefined, cachePath())).toBeNull()
+    saveGlobalMeasurementsCache(baseUrl, measurements, new Date(now + 1).toISOString(), cachePath())
     expect(loadGlobalMeasurementsCache(baseUrl, now, undefined, cachePath())).toBeNull()
     saveGlobalMeasurementsCache(
       baseUrl,
@@ -127,6 +129,16 @@ describe('StrongClient global measurements cache', () => {
     expect(loadGlobalMeasurementsCache(baseUrl, now, undefined, cachePath())?.measurements).toEqual(
       current,
     )
+  })
+
+  it('returns fetched data when cache persistence fails', async () => {
+    const blockedParent = join(tmp, 'not-a-directory')
+    writeFileSync(blockedParent, 'file')
+    const fetch = vi.fn(async () => mockResponse(measurements))
+    await expect(
+      client(fetch, undefined, join(blockedParent, 'global.json')).getAllMeasurements(),
+    ).resolves.toEqual(measurements)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('does not replace an existing cache after incomplete pagination fails', async () => {

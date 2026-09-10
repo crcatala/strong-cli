@@ -378,12 +378,17 @@ export class StrongClient {
       _embedded: { ...(first._embedded ?? {}), measurement: measurements },
     }
     if (cachePath !== false) {
-      saveGlobalMeasurementsCache(
-        this.baseUrl,
-        complete,
-        new Date(this.now()).toISOString(),
-        cachePath,
-      )
+      try {
+        saveGlobalMeasurementsCache(
+          this.baseUrl,
+          complete,
+          new Date(this.now()).toISOString(),
+          cachePath,
+        )
+      } catch {
+        // The public cache is an optimization. A read must still succeed when
+        // a read-only or unavailable config directory prevents persistence.
+      }
     }
     return complete
   }

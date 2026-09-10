@@ -57,7 +57,7 @@ export function loadGlobalMeasurementsCache(
       return null
     }
     const fetchedAt = Date.parse(cached.fetchedAt)
-    if (Number.isNaN(fetchedAt)) return null
+    if (Number.isNaN(fetchedAt) || fetchedAt > nowMs) return null
     if (nowMs - fetchedAt >= ttlMs)
       return { measurements: cached.measurements, provenance: 'expired' }
     return { measurements: cached.measurements, provenance: 'hit' }
