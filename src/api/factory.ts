@@ -4,6 +4,15 @@
 
 import { configFileStore, getEnv, sessionStore } from '../config/config.js'
 import { type ClientHeaders, type RetryPolicy, StrongClient } from './client.js'
+import { HttpStats } from './http-stats.js'
+
+let httpStats: HttpStats | undefined
+
+/** Configure process-scoped, opt-in aggregate HTTP diagnostics for CLI clients. */
+export function configureHttpStats(enabled: boolean): HttpStats | undefined {
+  httpStats = enabled ? new HttpStats() : undefined
+  return httpStats
+}
 
 export interface ClientFactoryOptions {
   /** Use the config-file session store instead of the keyring. */
@@ -40,6 +49,7 @@ export function createClient(opts: ClientFactoryOptions = {}): StrongClient {
     headers,
     fetch: injectedFetch(),
     retry,
+    httpStats,
   })
 }
 

@@ -66,6 +66,34 @@ afterEach(() => {
   rmSync(tmp, { recursive: true, force: true })
 })
 
+describe('HTTP statistics CLI diagnostics', () => {
+  it('keeps JSON stdout parseable and emits aggregate stats only to stderr when enabled', async () => {
+    const h = harness({ ...tokenEnv(tmp), STRONG_HTTP_STATS: '1' })
+    const fetchImpl = vi.fn(async () => mockResponse({ _embedded: { measurement: [] } }))
+
+    await h.run(['measurements', '--json'], fetchImpl)
+
+    expect(() => JSON.parse(h.out.join(''))).not.toThrow()
+    const statsLine = h.err.find((line) => line.startsWith('strong http stats: '))
+    expect(statsLine).toBeDefined()
+    if (!statsLine) throw new Error('expected HTTP statistics on stderr')
+    expect(JSON.parse(statsLine.slice('strong http stats: '.length))).toMatchObject({
+      attempts: 1,
+      routes: { 'user-metadata': { attempts: 1, statuses: { '200': 1 } } },
+    })
+  })
+
+  it('does not emit statistics when diagnostics are disabled', async () => {
+    const h = harness(tokenEnv(tmp))
+    await h.run(
+      ['measurements', '--json'],
+      vi.fn(async () => mockResponse({ _embedded: {} })),
+    )
+
+    expect(h.err.join('')).not.toContain('strong http stats:')
+  })
+})
+
 describe('workout <id> command', () => {
   it('fetches the single log via the detail endpoint (no full-history pagination)', async () => {
     const urls: string[] = []

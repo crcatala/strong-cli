@@ -1,6 +1,6 @@
 ---
 id: sc-za3e
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-09-10T00:33:31Z

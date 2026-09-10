@@ -11,6 +11,7 @@ import {
   userUrl,
   userWriteUrl,
 } from './endpoints.js'
+import { classifyHttpRoute, type HttpStats } from './http-stats.js'
 import { TokenManager, type TokenState, type TokenStore } from './token-manager.js'
 import type {
   Folder,
@@ -34,6 +35,8 @@ export interface StrongClientOptions {
   now?: () => number
   /** Override the retry policy (defaults to {@link DEFAULT_RETRY_POLICY}). */
   retry?: Partial<RetryPolicy>
+  /** Optional aggregate-only diagnostics sink; no request data is retained. */
+  httpStats?: HttpStats
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -152,6 +155,7 @@ export class StrongClient {
       store: opts.store,
       now: opts.now,
       refresh: async (body: RefreshRequest) => {
+        this.opts.httpStats?.recordTokenRefresh()
         const res = await this.rawRequest('POST', refreshUrl(this.baseUrl), {
           body,
           auth: false,
@@ -178,10 +182,13 @@ export class StrongClient {
         body: JSON.stringify(body),
       })
     } catch (err) {
+      this.opts.httpStats?.recordAttempt('auth-login', undefined)
       throw new AuthError(
         `Network error while contacting ${this.baseUrl}: ${err instanceof Error ? err.message : String(err)}`,
       )
     }
+    const text = await response.text()
+    this.opts.httpStats?.recordAttempt('auth-login', response.status, Buffer.byteLength(text))
 
     if (response.status === 401 || response.status === 403) {
       throw new AuthError('Login failed: invalid email/username or password (401)')
@@ -190,7 +197,7 @@ export class StrongClient {
       throw new ApiError(`Login failed with HTTP ${response.status}`, response.status)
     }
 
-    const data = (await response.json()) as LoginResponse
+    const data = JSON.parse(text) as LoginResponse
     if (!data.accessToken || !data.refreshToken || !data.userId) {
       throw new AuthError(
         'Login response missing expected fields (accessToken/refreshToken/userId)',
@@ -232,14 +239,28 @@ export class StrongClient {
       headers.authorization = `Bearer ${token}`
     }
 
-    const response = await this.fetchImpl(url, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    })
+    let response: Response
+    try {
+      response = await this.fetchImpl(url, {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      })
+    } catch (err) {
+      this.opts.httpStats?.recordAttempt(classifyHttpRoute(url), undefined)
+      throw err
+    }
 
-    if (response.status === 204) return undefined
+    if (response.status === 204) {
+      this.opts.httpStats?.recordAttempt(classifyHttpRoute(url), response.status)
+      return undefined
+    }
     const text = await response.text()
+    this.opts.httpStats?.recordAttempt(
+      classifyHttpRoute(url),
+      response.status,
+      Buffer.byteLength(text),
+    )
     if (response.ok) {
       return text ? JSON.parse(text) : undefined
     }
@@ -271,6 +292,7 @@ export class StrongClient {
 
         if (status === 401 && !refreshed) {
           refreshed = true
+          this.opts.httpStats?.recordRetry()
           await this.tokenManager.forceRefresh()
           continue
         }
@@ -278,6 +300,7 @@ export class StrongClient {
           (status !== undefined && status >= 500) || (status === 429 && retry.retryRateLimited)
         if (retryable && attempt < retry.maxRetries) {
           attempt++
+          this.opts.httpStats?.recordRetry()
           // Jittered backoff (±25%) — a deterministic sleep would let
           // concurrent requests re-collide on the rate limiter.
           await sleep(retry.baseDelayMs * attempt * (0.75 + Math.random() * 0.5))
