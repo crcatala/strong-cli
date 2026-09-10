@@ -192,6 +192,103 @@ describe('workout <id> command', () => {
   })
 })
 
+describe('export --since', () => {
+  function exportFetch(logs: ReturnType<typeof syntheticLog>[], urls: string[]) {
+    const inner = createFetchMock([
+      {
+        match: (url) => url.includes('/api/measurements'),
+        handler: () => mockResponse({ _embedded: { measurement: globalMeasurements } }),
+      },
+      {
+        match: (url) => url.includes('include=measurement'),
+        handler: () => mockResponse(syntheticUserResponse([])),
+      },
+      {
+        match: (url) => url.includes('include=log'),
+        handler: () => mockResponse(syntheticUserResponse(logs)),
+      },
+    ])
+    return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      urls.push(String(input))
+      return inner(input, init)
+    })
+  }
+
+  it('exports an enriched range with request count independent of workout count', async () => {
+    const run = async (count: number) => {
+      const urls: string[] = []
+      const logs = [
+        syntheticLog({ id: 'before-range', startDate: '2025-12-31T23:59:59.000Z' }),
+        ...Array.from({ length: count }, (_, index) =>
+          syntheticLog({ id: `log-${index}`, startDate: '2026-01-02T00:00:00.000Z' }),
+        ),
+      ]
+      const h = harness(tokenEnv(join(tmp, String(count))))
+      await h.run(['export', '--json', '--since', '2026-01-01'], exportFetch(logs, urls))
+      return { doc: JSON.parse(h.out.join('')), urls }
+    }
+
+    const one = await run(1)
+    const twenty = await run(20)
+    expect(twenty.doc.filter).toEqual({ since: '2026-01-01' })
+    expect(twenty.doc.workouts).toHaveLength(20)
+    expect(twenty.doc.workouts[0].exercises[0].name).toBe('Squat (Machine)')
+    expect(twenty.doc.workouts[0].exercises[0].sets[0]).toMatchObject({ weight: 60, reps: 12 })
+    for (const urls of [one.urls, twenty.urls]) {
+      expect(urls.filter((url) => url.includes('/api/measurements'))).toHaveLength(1)
+      expect(urls.filter((url) => url.includes('include=measurement'))).toHaveLength(1)
+      expect(urls.filter((url) => url.includes('include=log'))).toHaveLength(1)
+      expect(urls.filter((url) => /\/logs\/log-\d+/.test(url))).toHaveLength(0)
+    }
+  })
+
+  it('accepts ISO timestamps and filters at the exact cutoff', async () => {
+    const h = harness(tokenEnv(tmp))
+    await h.run(
+      ['export', '--json', '--since', '2026-01-02T00:30:00+00:00'],
+      exportFetch(
+        [
+          syntheticLog({ id: 'before-cutoff', startDate: '2026-01-02T00:29:59.999Z' }),
+          syntheticLog({ id: 'at-cutoff', startDate: '2026-01-02T00:30:00.000Z' }),
+          syntheticLog({ id: 'after-cutoff', startDate: '2026-01-02T00:30:00.001Z' }),
+        ],
+        [],
+      ),
+    )
+
+    const doc = JSON.parse(h.out.join(''))
+    expect(doc.filter).toEqual({ since: '2026-01-02T00:30:00+00:00' })
+    expect(doc.workouts.map((workout: { id: string }) => workout.id)).toEqual([
+      'at-cutoff',
+      'after-cutoff',
+    ])
+  })
+
+  it('returns a valid zero-workout document for an empty range', async () => {
+    const urls: string[] = []
+    const h = harness(tokenEnv(tmp))
+    await h.run(['export', '--json', '--since', '2027-01-01'], exportFetch([syntheticLog()], urls))
+
+    const doc = JSON.parse(h.out.join(''))
+    expect(doc.filter).toEqual({ since: '2027-01-01' })
+    expect(doc.totals.workouts).toBe(0)
+    expect(doc.workouts).toEqual([])
+    expect(urls.filter((url) => /\/logs\//.test(url))).toHaveLength(0)
+  })
+
+  it.each(['', '2026-02-30'])(
+    'rejects invalid --since input without making requests: %j',
+    async (since) => {
+      const fetchImpl = vi.fn()
+      const h = harness(tokenEnv(tmp))
+      await expect(h.run(['export', '--json', '--since', since], fetchImpl)).rejects.toThrow(
+        `Invalid --since date: ${since}`,
+      )
+      expect(fetchImpl).not.toHaveBeenCalled()
+    },
+  )
+})
+
 describe('auth whoami', () => {
   it('resolves as an alias of auth status', async () => {
     const h = harness(tokenEnv(tmp))
