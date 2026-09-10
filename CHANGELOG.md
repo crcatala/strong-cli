@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Cache global exercise definitions.
+- Add privacy-safe HTTP request statistics.
+- Support filtered bulk workout exports.
+
+### Fixed
+
+- Tolerate failures when writing the global cache.
+- Preserve HTTP statistics when response body processing fails.
+- Validate empty export `since` filters.
+
 ## [0.2.1] - 2026-08-13
 
 ### Fixed
