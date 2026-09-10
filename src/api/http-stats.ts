@@ -9,6 +9,7 @@ export type HttpRoute =
   | 'unknown'
 
 export interface HttpStatsReport {
+  cache: { globalMeasurements?: string }
   attempts: number
   retries: number
   tokenRefreshes: number
@@ -21,6 +22,7 @@ export interface HttpStatsReport {
 export class HttpStats {
   private readonly startedAt: number
   private attempts = 0
+  private globalMeasurementsCache: string | undefined
   private retries = 0
   private tokenRefreshes = 0
   private responseBytes = 0
@@ -39,6 +41,10 @@ export class HttpStats {
     this.routes.set(route, entry)
   }
 
+  recordGlobalMeasurementsCache(provenance: string): void {
+    this.globalMeasurementsCache = provenance
+  }
+
   recordResponseBytes(responseBytes: number): void {
     this.responseBytes += responseBytes
   }
@@ -53,6 +59,9 @@ export class HttpStats {
 
   report(): HttpStatsReport {
     return {
+      cache: this.globalMeasurementsCache
+        ? { globalMeasurements: this.globalMeasurementsCache }
+        : {},
       attempts: this.attempts,
       retries: this.retries,
       tokenRefreshes: this.tokenRefreshes,

@@ -1,6 +1,6 @@
 ---
 id: sc-b8p5
-status: open
+status: closed
 deps: [sc-lv6v]
 links: []
 created: 2026-09-10T00:33:31Z
@@ -29,3 +29,9 @@ Cache only the public global measurement collection. Use a schema-versioned reco
 - Documentation states TTL and freshness semantics.
 - Build, unit tests, lint, package test, and typecheck pass.
 
+
+## Notes
+
+**2026-09-10T02:35:15Z**
+
+Implemented a backend-isolated seven-day persistent cache for public global exercise definitions. Added --fresh coverage for workouts/stats/export, workout detail, and exercises; added safe cache provenance to verbose output and HTTP stats. Validated with vitest, build, typecheck, Biome 2.5.10 check (repo config targets 2.5.10), and package smoke test.

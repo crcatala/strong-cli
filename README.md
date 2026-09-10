@@ -97,6 +97,7 @@ behaviors:
 - First run on a large history is slow by design (1 828 logs ≈ 75 paced pages
   ≈ 10s); afterwards it's a couple of pages.
 - `--fresh` on `workouts`/`stats`/`export` forces a full re-sync.
+- The public global exercise library is cached separately, by normalized backend URL, for **seven days**. It contains only public exercise definitions (never workouts, preferences, custom exercises, credentials, or tokens). `--fresh` on the data commands refreshes it too; `workout <id> --fresh` and `exercises --fresh` refresh only this public cache.
 - `strong export --since <YYYY-MM-DD-or-ISO>` filters the already enriched local workout model after that normal sync. It does not change the server-side cursor or force `--fresh`, so it is the efficient machine-readable choice for a bounded workout range.
 - A stale cursor (HTTP 400) triggers an automatic full re-walk.
 - Deleted workouts are not tombstoned by the API. To keep the cache honest
@@ -139,6 +140,7 @@ strong workouts --tag push      # only workouts with push-tagged exercises
 strong workouts --unit kg       # force kg display regardless of account prefs
 strong workout <id>             # full detail (copy the ID from `strong workouts`)
 strong workout <id> --unit lb   # force lb display in the detail view
+strong workout <id> --fresh     # refresh public exercise definitions
 ```
 
 ### Templates, folders & tags (require auth)
@@ -190,6 +192,7 @@ and reports `serverConfirmed` (`true`, `false`, or `undefined`).
 strong exercises                     # first 200 global exercises
 strong exercises --search squat
 strong exercises --user              # + your custom exercises (needs auth)
+strong exercises --fresh             # refresh the public exercise cache
 ```
 
 ## Writing (opt-in)
@@ -340,8 +343,9 @@ STRONG_HTTP_STATS=1 strong export --json > workouts.json
 ```
 
 The report includes actual HTTP attempts (including retries and token refreshes),
-fixed endpoint categories, status codes, received response-byte totals, and
-elapsed time. It deliberately never includes URLs, query strings, identifiers,
+fixed endpoint categories, status codes, received response-byte totals, elapsed
+time, and global-exercise cache provenance (`hit`, `miss`, `expired`, or
+`fresh`). It deliberately never includes URLs, query strings, identifiers,
 headers, tokens, or request/response bodies. Do not add raw transport or body
 logging when troubleshooting: those values can contain account data and
 credentials.

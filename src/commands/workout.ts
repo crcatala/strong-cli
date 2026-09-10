@@ -162,6 +162,7 @@ export function registerWorkoutCommand(program: Command, ctx: CliContext): void 
     .command('workout [id]')
     .description('Show a single workout in detail (and manage workouts with log/delete/edit)')
     .option('--unit <unit>', 'Override display units (kg, lb, m, km, mi)')
+    .option('--fresh', 'Refresh the cached public global exercise library')
     .addHelpText(
       'after',
       `
@@ -174,7 +175,7 @@ Write subcommands (each opt-in via --write):
   strong workout delete <id>
   strong workout edit <id> --set <groupIndex>:<setIndex> [--reps N] [--weight W] [--rpe R]`,
     )
-    .action(async (id: string | undefined, options: { unit?: string }) => {
+    .action(async (id: string | undefined, options: { unit?: string; fresh?: boolean }) => {
       if (!id) throw new UsageError('workout id is required')
 
       const client = createClient()
@@ -204,8 +205,9 @@ Write subcommands (each opt-in via --write):
       logVerbose(ctx, 'Resolving exercise names...')
       const [userResp, globalMeasurements] = await Promise.all([
         client.getUser(session.userId, { includes: ['measurement'] }),
-        client.getAllMeasurements(),
+        client.getAllMeasurements({ fresh: options.fresh }),
       ])
+      logVerbose(ctx, `Global exercise cache: ${client.globalMeasurementsCacheProvenance}`)
       const measurementMap = buildMeasurementMap(
         globalMeasurements._embedded?.measurement ?? [],
         userResp._embedded?.measurement ?? [],
