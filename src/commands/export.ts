@@ -57,7 +57,8 @@ Examples:
   strong export --json | jq .totals        # pipe to jq`,
     )
     .action(async (options: { out?: string; tag?: string; since?: string; fresh?: boolean }) => {
-      const sinceMs = options.since ? parseSince(options.since) : undefined
+      const since = options.since
+      const sinceMs = since === undefined ? undefined : parseSince(since)
       const client = createClient()
       logVerbose(ctx, options.fresh ? 'Re-syncing full history...' : 'Fetching data...')
       const data = await loadWorkoutData(client, { fresh: options.fresh })
@@ -67,12 +68,12 @@ Examples:
 
       let workouts = data.workouts
       const filter: { tag?: string; since?: string } = {}
-      if (sinceMs !== undefined && options.since) {
+      if (since !== undefined && sinceMs !== undefined) {
         workouts = workouts.filter((workout) => {
           const startMs = workout.startDate ? new Date(workout.startDate).getTime() : NaN
           return !Number.isNaN(startMs) && startMs >= sinceMs
         })
-        filter.since = options.since
+        filter.since = since
       }
       if (options.tag) {
         logVerbose(ctx, `Filtering by tag: ${options.tag}`)

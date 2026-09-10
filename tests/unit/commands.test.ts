@@ -242,6 +242,28 @@ describe('export --since', () => {
     }
   })
 
+  it('accepts ISO timestamps and filters at the exact cutoff', async () => {
+    const h = harness(tokenEnv(tmp))
+    await h.run(
+      ['export', '--json', '--since', '2026-01-02T00:30:00+00:00'],
+      exportFetch(
+        [
+          syntheticLog({ id: 'before-cutoff', startDate: '2026-01-02T00:29:59.999Z' }),
+          syntheticLog({ id: 'at-cutoff', startDate: '2026-01-02T00:30:00.000Z' }),
+          syntheticLog({ id: 'after-cutoff', startDate: '2026-01-02T00:30:00.001Z' }),
+        ],
+        [],
+      ),
+    )
+
+    const doc = JSON.parse(h.out.join(''))
+    expect(doc.filter).toEqual({ since: '2026-01-02T00:30:00+00:00' })
+    expect(doc.workouts.map((workout: { id: string }) => workout.id)).toEqual([
+      'at-cutoff',
+      'after-cutoff',
+    ])
+  })
+
   it('returns a valid zero-workout document for an empty range', async () => {
     const urls: string[] = []
     const h = harness(tokenEnv(tmp))
@@ -254,14 +276,17 @@ describe('export --since', () => {
     expect(urls.filter((url) => /\/logs\//.test(url))).toHaveLength(0)
   })
 
-  it('rejects invalid --since input without making requests', async () => {
-    const fetchImpl = vi.fn()
-    const h = harness(tokenEnv(tmp))
-    await expect(h.run(['export', '--json', '--since', '2026-02-30'], fetchImpl)).rejects.toThrow(
-      'Invalid --since date: 2026-02-30',
-    )
-    expect(fetchImpl).not.toHaveBeenCalled()
-  })
+  it.each(['', '2026-02-30'])(
+    'rejects invalid --since input without making requests: %j',
+    async (since) => {
+      const fetchImpl = vi.fn()
+      const h = harness(tokenEnv(tmp))
+      await expect(h.run(['export', '--json', '--since', since], fetchImpl)).rejects.toThrow(
+        `Invalid --since date: ${since}`,
+      )
+      expect(fetchImpl).not.toHaveBeenCalled()
+    },
+  )
 })
 
 describe('auth whoami', () => {
