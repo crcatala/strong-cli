@@ -60,6 +60,8 @@ export interface WorkoutData {
    */
   cache: {
     fromCache: boolean
+    /** Public exercise-library cache provenance for this load. */
+    globalMeasurements?: 'hit' | 'miss' | 'expired' | 'fresh'
     syncedAt?: string
     finalized?: boolean
     fullResync?: 'fresh' | 'interval' | null
@@ -79,7 +81,7 @@ export async function loadWorkoutData(
   const [{ logs, cache, fullResync }, userResp, globalMeasurements] = await Promise.all([
     syncWorkoutLogs(client, userId, opts),
     client.getUser(userId, { includes: ['measurement', 'tag'] }),
-    client.getAllMeasurements(),
+    client.getAllMeasurements({ fresh: opts.fresh }),
   ])
 
   const userMeasurements = userResp._embedded?.measurement ?? []
@@ -102,6 +104,7 @@ export async function loadWorkoutData(
     weightUnit,
     distanceUnit,
     cache: {
+      globalMeasurements: client.globalMeasurementsCacheProvenance,
       fromCache: cache !== null,
       syncedAt: cache?.syncedAt,
       finalized: cache?.finalized,

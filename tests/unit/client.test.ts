@@ -23,7 +23,12 @@ function memStore(initial: TokenState | null = null): TokenStore {
 }
 
 function makeClient(store: TokenStore, fetchImpl: typeof fetch) {
-  return new StrongClient({ baseUrl: 'https://back.strong.app', store, fetch: fetchImpl })
+  return new StrongClient({
+    baseUrl: 'https://back.strong.app',
+    store,
+    fetch: fetchImpl,
+    globalMeasurementsCachePath: false,
+  })
 }
 
 describe('StrongClient', () => {

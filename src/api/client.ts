@@ -12,6 +12,11 @@ import {
   userWriteUrl,
 } from './endpoints.js'
 import { classifyHttpRoute, type HttpStats } from './http-stats.js'
+import {
+  type GlobalMeasurementsCacheProvenance,
+  loadGlobalMeasurementsCache,
+  saveGlobalMeasurementsCache,
+} from './measurement-cache.js'
 import { TokenManager, type TokenState, type TokenStore } from './token-manager.js'
 import type {
   Folder,
@@ -37,6 +42,8 @@ export interface StrongClientOptions {
   retry?: Partial<RetryPolicy>
   /** Optional aggregate-only diagnostics sink; no request data is retained. */
   httpStats?: HttpStats
+  /** Override (or disable) the public global-measurements cache (tests). */
+  globalMeasurementsCachePath?: string | false
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -78,6 +85,8 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = {
 }
 
 export interface PaginationOptions {
+  /** Bypass and replace the persistent public global-measurements cache. */
+  fresh?: boolean
   /** Override the per-walk page cap (default {@link DEFAULT_MAX_PAGES}). */
   maxPages?: number
   /** Override the inter-page delay in ms (default {@link DEFAULT_PAGE_DELAY_MS}). */
@@ -146,6 +155,8 @@ export class StrongClient {
   readonly headers: ClientHeaders
   readonly tokenManager: TokenManager
   private readonly fetchImpl: typeof fetch
+  /** Provenance from the most recent getAllMeasurements call in this client. */
+  globalMeasurementsCacheProvenance: GlobalMeasurementsCacheProvenance | undefined
 
   constructor(private readonly opts: StrongClientOptions) {
     this.baseUrl = (opts.baseUrl ?? STRONG_BACKEND_DEFAULT).replace(/\/+$/, '')
@@ -325,6 +336,20 @@ export class StrongClient {
    * exceeding the cap throws rather than silently truncating.
    */
   async getAllMeasurements(opts: PaginationOptions = {}): Promise<MeasurementsResponse> {
+    const cachePath = this.opts.globalMeasurementsCachePath
+    if (!opts.fresh && cachePath !== false) {
+      const cached = loadGlobalMeasurementsCache(this.baseUrl, this.now(), undefined, cachePath)
+      if (cached?.provenance === 'hit') {
+        this.globalMeasurementsCacheProvenance = 'hit'
+        this.opts.httpStats?.recordGlobalMeasurementsCache('hit')
+        return cached.measurements
+      }
+      this.globalMeasurementsCacheProvenance = cached?.provenance ?? 'miss'
+    } else {
+      this.globalMeasurementsCacheProvenance = opts.fresh ? 'fresh' : 'miss'
+    }
+    this.opts.httpStats?.recordGlobalMeasurementsCache(this.globalMeasurementsCacheProvenance)
+
     const maxPages = opts.maxPages ?? DEFAULT_MAX_PAGES
     const pageDelayMs = opts.pageDelayMs ?? DEFAULT_PAGE_DELAY_MS
     const first = await this.getMeasurements(1)
@@ -339,15 +364,28 @@ export class StrongClient {
       }
       if (pageDelayMs > 0) await sleep(pageDelayMs)
       const more = await this.getMeasurements(page)
-      const batch = more._embedded?.measurement ?? []
-      if (batch.length === 0) break
+      const batch = more._embedded?.measurement
+      if (!Array.isArray(batch) || batch.length === 0) {
+        throw new ApiError(
+          `getAllMeasurements received an empty page ${page} while pagination indicated more results — refusing to cache an incomplete library`,
+        )
+      }
       measurements.push(...batch)
       next = more._links?.next
     }
-    return {
+    const complete = {
       ...first,
       _embedded: { ...(first._embedded ?? {}), measurement: measurements },
     }
+    if (cachePath !== false) {
+      saveGlobalMeasurementsCache(
+        this.baseUrl,
+        complete,
+        new Date(this.now()).toISOString(),
+        cachePath,
+      )
+    }
+    return complete
   }
 
   // --------------------------------------------------------------------------

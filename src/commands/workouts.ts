@@ -69,6 +69,7 @@ Examples:
         const client = createClient()
         logVerbose(ctx, options.fresh ? 'Re-syncing full history...' : 'Fetching workouts...')
         const data = await loadWorkoutData(client, { fresh: options.fresh })
+        logVerbose(ctx, `Global exercise cache: ${data.cache.globalMeasurements}`)
         if (data.cache.fullResync === 'interval') {
           logInfo(ctx, 'Full re-sync triggered by the sync interval — pruning deleted workouts')
         }
