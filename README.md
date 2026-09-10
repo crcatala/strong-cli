@@ -97,6 +97,7 @@ behaviors:
 - First run on a large history is slow by design (1 828 logs ≈ 75 paced pages
   ≈ 10s); afterwards it's a couple of pages.
 - `--fresh` on `workouts`/`stats`/`export` forces a full re-sync.
+- `strong export --since <YYYY-MM-DD-or-ISO>` filters the already enriched local workout model after that normal sync. It does not change the server-side cursor or force `--fresh`, so it is the efficient machine-readable choice for a bounded workout range.
 - A stale cursor (HTTP 400) triggers an automatic full re-walk.
 - Deleted workouts are not tombstoned by the API. To keep the cache honest
   without manual intervention, a **full re-sync runs automatically** every
@@ -311,8 +312,9 @@ strong stats               # all-time totals, weekly volume, top exercises
 strong stats --weeks 12
 strong stats --tag push    # aggregate only push-tagged workouts
 strong stats --unit lb     # force lb display regardless of account prefs
-strong export -o strong-export.json  # full JSON export
-strong export --tag push   # export only push-tagged workouts
+strong export -o strong-export.json       # full enriched JSON export
+strong export --tag push                   # export only push-tagged workouts
+strong export --since 2026-01-01 --json    # enriched workouts from this date
 strong export --json | jq .totals
 ```
 
