@@ -18,7 +18,7 @@ community-reverse-engineered endpoints. Use at your own risk.
 
 ## Setup
 
-Install from npm (requires Node.js `>=22`):
+Install from npm (requires Node.js `^22.21.0 || >=24.0.0`):
 
 ```bash
 npm install -g @crcatala/strong-cli
