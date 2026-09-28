@@ -5,3 +5,6 @@ dist/
 session.json
 strong-export*.json
 coverage/
+
+# Vitest cache and reporter output
+.vitest/
