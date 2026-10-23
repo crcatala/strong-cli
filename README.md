@@ -1,4 +1,4 @@
-# strong-cli
+<h1><img src="assets/icon.png" width="40" height="40" align="top" alt="" /> strong-cli</h1>
 
 [![npm version](https://img.shields.io/npm/v/@crcatala/strong-cli.svg)](https://www.npmjs.com/package/@crcatala/strong-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
