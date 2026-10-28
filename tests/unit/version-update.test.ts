@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { formatVersionDetails } from '../../src/commands/meta.js'
 
 const runUpdate = vi.hoisted(() => vi.fn())
 
@@ -105,5 +106,28 @@ describe('strong update', () => {
     await h.run(['--help'])
     expect(h.out.join('')).toContain('update')
     expect(h.out.join('')).toContain('version')
+  })
+})
+
+describe('formatVersionDetails', () => {
+  it('prints one key: value line per reported field', () => {
+    expect(
+      formatVersionDetails({
+        version: '0.3.0',
+        commit: 'abc1234',
+        date: '2026-10-27',
+        dirty: false,
+        install: 'checkout',
+        path: '/src/strong-cli',
+      }),
+    ).toBe(
+      'version: 0.3.0\ncommit: abc1234\ndate: 2026-10-27\ndirty: false\ninstall: checkout\npath: /src/strong-cli',
+    )
+  })
+
+  it('skips fields the build could not report', () => {
+    expect(formatVersionDetails({ version: '0.3.0', commit: undefined, install: 'unknown' })).toBe(
+      'version: 0.3.0\ninstall: unknown',
+    )
   })
 })

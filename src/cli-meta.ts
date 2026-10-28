@@ -118,9 +118,8 @@ export function versionLine(name: string): string {
   return formatVersion(name, buildInfo())
 }
 
-// For `<tool> version [--json]`.
-export function versionDetails(): Record<string, unknown> {
-  const meta = packageMeta()
+// For `<tool> version [--json]`. `meta` is only for tests; the CLI uses the real package.
+export function versionDetails(meta: PackageMeta = packageMeta()): Record<string, unknown> {
   const info = buildInfo(meta)
   const checkout = isCheckout(meta.root)
   const install = detectInstall(
@@ -305,9 +304,12 @@ export interface UpdateOptions {
 
 const show = (s: Step) => [s.cmd, ...s.args].join(' ')
 
-// Returns the exit code: see the release standard's update table.
-export function runUpdate(name: string, opts: UpdateOptions = {}): number {
-  const meta = packageMeta()
+// Returns the exit code: see the release standard's update table. `meta` is only for tests.
+export function runUpdate(
+  name: string,
+  opts: UpdateOptions = {},
+  meta: PackageMeta = packageMeta(),
+): number {
   const info = buildInfo(meta)
   const checkout = isCheckout(meta.root)
   const kind = detectInstall(meta.root, checkout, checkout ? undefined : run('npm', ['root', '-g']))

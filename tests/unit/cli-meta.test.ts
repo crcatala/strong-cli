@@ -11,6 +11,7 @@ import {
   formatVersion,
   gitCloneUrl,
   gitInstallUrl,
+  packageManagerFor,
   packageMeta,
   updateSteps,
 } from '../../src/cli-meta.js'
@@ -307,5 +308,70 @@ describe('checkForUpdate in a checkout', () => {
     const { status, root } = clone('head', true)
     writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 't', version: '0.1.0', x: 1 }))
     expect(status().available).toBe(false)
+  })
+})
+
+describe('formatVersion without a commit date', () => {
+  it('prints only the short commit', () => {
+    expect(formatVersion('strong', { version: '1.4.2', commit: 'a1b2c3d4e5f6' })).toBe(
+      'strong 1.4.2 (a1b2c3d)',
+    )
+  })
+})
+
+describe('packageMeta', () => {
+  it('accepts a repository given as a string', () => {
+    const root = mkTemp()
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({
+        name: '@crcatala/strong-cli',
+        version: '0.3.0',
+        repository: 'github:crcatala/strong-cli',
+      }),
+    )
+    expect(packageMeta(root).repositoryUrl).toBe('github:crcatala/strong-cli')
+  })
+
+  it('fails loudly when there is no package.json above', () => {
+    const root = mkTemp()
+    mkdirSync(join(root, 'empty'))
+    expect(() => packageMeta(join(root, 'empty'))).toThrow(/no package\.json above/)
+  })
+})
+
+describe('packageManagerFor', () => {
+  it('detects the lockfile in the package root', () => {
+    const root = mkTemp()
+    expect(packageManagerFor(root)).toBe('npm')
+
+    writeFileSync(join(root, 'pnpm-lock.yaml'), '')
+    expect(packageManagerFor(root)).toBe('pnpm')
+
+    rmSync(join(root, 'pnpm-lock.yaml'))
+    writeFileSync(join(root, 'bun.lockb'), '')
+    expect(packageManagerFor(root)).toBe('bun')
+
+    rmSync(join(root, 'bun.lockb'))
+    writeFileSync(join(root, 'bun.lock'), '')
+    expect(packageManagerFor(root)).toBe('bun')
+  })
+})
+
+describe('buildInfo in a checkout that git cannot read', () => {
+  it('falls back to the version alone', () => {
+    const root = mkTemp()
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 't', version: '0.1.0' }))
+    // A .git directory that is not a repository: the checkout check passes, git does not.
+    mkdirSync(join(root, '.git'))
+    expect(buildInfo(packageMeta(root))).toEqual({ version: '0.1.0' })
+  })
+})
+
+describe('compareVersions prerelease ordering', () => {
+  it('sorts a prerelease before its release, and prereleases among themselves', () => {
+    expect(compareVersions('1.0.0', '1.0.0-alpha')).toBeGreaterThan(0)
+    expect(compareVersions('1.0.0-beta', '1.0.0-alpha')).toBeGreaterThan(0)
+    expect(compareVersions('1.0.0-alpha', '1.0.0-beta')).toBeLessThan(0)
   })
 })

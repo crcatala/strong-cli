@@ -7,6 +7,14 @@ import type { CliContext } from '../cli/context.js'
 import { output } from '../cli/output.js'
 import { runUpdate, versionDetails } from '../cli-meta.js'
 
+/** `key: value` lines, skipping fields the build could not report. */
+export function formatVersionDetails(details: Record<string, unknown>): string {
+  return Object.entries(details)
+    .filter(([, value]) => value !== undefined)
+    .map(([key, value]) => `${key}: ${String(value)}`)
+    .join('\n')
+}
+
 export function registerMetaCommands(program: Command, ctx: CliContext): void {
   program
     .command('update')
@@ -40,11 +48,6 @@ Examples:
     )
     .action(() => {
       const details = versionDetails()
-      output(ctx, details, {
-        formatter: (d) =>
-          Object.entries(d)
-            .map(([key, value]) => `${key}: ${value === undefined ? '' : String(value)}`)
-            .join('\n'),
-      })
+      output(ctx, details, { formatter: formatVersionDetails })
     })
 }
