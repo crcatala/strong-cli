@@ -1,10 +1,11 @@
-import { readFileSync } from 'node:fs'
 import { Command, Option } from 'commander'
+import { packageMeta, versionLine } from '../cli-meta.js'
 import { registerAuthCommand } from '../commands/auth.js'
 import { registerExercisesCommand } from '../commands/exercises.js'
 import { registerExportCommand } from '../commands/export.js'
 import { registerFoldersCommand } from '../commands/folders.js'
 import { registerMeasurementsCommand } from '../commands/measurements.js'
+import { registerMetaCommands } from '../commands/meta.js'
 import { registerStatsCommand } from '../commands/stats.js'
 import { registerTagsCommand } from '../commands/tags.js'
 import { registerTemplatesCommand } from '../commands/templates.js'
@@ -13,19 +14,9 @@ import { registerWorkoutsCommand } from '../commands/workouts.js'
 import type { CliContext } from './context.js'
 import { OUTPUT_FORMATS } from './context.js'
 
-// Read the version from package.json so `--version` and the banner never drift
-// from the published artifact. The relative path resolves from both src/ (dev,
-// via bun/tsx) and dist/ (built), and npm always ships package.json at the root.
-const VERSION = (() => {
-  try {
-    const pkg = JSON.parse(
-      readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
-    ) as { version?: string }
-    return pkg.version ?? '0.0.0'
-  } catch {
-    return '0.0.0'
-  }
-})()
+// The banner shows the bare version; `--version` prints the release standard's
+// line (`strong X.Y.Z (sha7 YYYY-MM-DD)`) from the build stamp or git.
+const VERSION = packageMeta().version
 
 export function createProgram(ctx: CliContext): Command {
   const program = new Command()
@@ -70,6 +61,8 @@ ${formatExample('strong tags', 'List exercise tags')}
 ${formatExample('strong measurements', 'List body measurements')}
 ${formatExample('strong stats --weeks 12', 'Volume/set statistics')}
 ${formatExample('strong export -o strong-export.json', 'Export everything to JSON')}
+${formatExample('strong update --check', 'Check for a newer release or commit')}
+${formatExample('strong version', 'Show version, commit and install details')}
 
 ${ctx.colors.section('Output Formats')}
   ${ctx.colors.option('--json')}     ${ctx.colors.muted('Machine-readable JSON (default when piped)')}
@@ -94,7 +87,7 @@ ${ctx.colors.section('Environment Variables')}
   program
     .name('strong')
     .description('Unofficial CLI for Strong Workout Tracker (strong.app)')
-    .version(VERSION)
+    .version(versionLine('strong'), '-V, --version', 'print the version and commit')
     .action(() => {
       program.help()
     })
@@ -123,6 +116,7 @@ ${ctx.colors.section('Environment Variables')}
   registerTagsCommand(program, ctx)
   registerStatsCommand(program, ctx)
   registerExportCommand(program, ctx)
+  registerMetaCommands(program, ctx)
 
   return program
 }
