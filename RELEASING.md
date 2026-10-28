@@ -1,110 +1,91 @@
 # Releasing
 
-This project uses [release-it](https://github.com/release-it/release-it) for manual
-releases from a maintainer machine. A release validates the package, updates the
-changelog and version, publishes `@crcatala/strong-cli` to npm, pushes a release
-commit and tag, and creates a GitHub Release.
+Releases are cut by hand from a clean `main` with
+[release-it](https://github.com/release-it/release-it), wrapped by
+`scripts/release.mjs`. One command bumps the version, moves the changelog's
+Unreleased section into the new version, commits, tags `vX.Y.Z`, pushes,
+creates the GitHub Release, and then publishes `@crcatala/strong-cli` to npm
+from the tagged commit. The `strong` command is what the package installs.
 
 ## Prerequisites
 
-- Push access to `crcatala/strong-cli`
-- An npm account with publish access to the `@crcatala` scope (`npm whoami`)
-- A GitHub token available as `GITHUB_TOKEN` with repository **Contents: read and
-  write** permission, so release-it can create the GitHub Release
-- Node.js `^22.21.0 || >=24.0.0` (the release-it v21 requirement)
-- A clean checkout on `main`
-
-The package is public and installs the `strong` command.
+- Push access to `crcatala/strong-cli`.
+- A GitHub token with repository **Contents: read and write** permission for
+  the GitHub Release, available as `GITHUB_TOKEN` (otherwise release-it opens
+  the release form in the browser).
+- An npm login with publish rights to the `@crcatala` scope: `npm whoami`,
+  else `npm login`.
+- Node.js `^22.21.0 || >=24.0.0` (the release-it v21 requirement).
+- A clean checkout on `main`.
 
 ## Before releasing
 
-1. Update the local `main` branch:
+1. Start from an up-to-date `main`:
 
    ```bash
    git checkout main
    git pull --ff-only
    ```
 
-2. Prepare and update the changelog. The helper lists changes since the last tag
-   and prints a prompt for drafting user-facing entries:
+2. Draft the changelog:
 
    ```bash
    npm run release:prep
    ```
 
-   Add entries below `## [Unreleased]` in `CHANGELOG.md` using
-   [Keep a Changelog](https://keepachangelog.com/) sections such as Added, Changed,
-   Fixed, Removed, or Security.
-
-3. Run the complete local verification suite:
-
-   ```bash
-   npm run verify
-   ```
-
-   This builds TypeScript, runs unit tests and linting, and smoke-tests the exact
-   `npm pack` tarball with production dependencies installed.
+   Paste the output into an LLM, review the result, and put it under
+   `## [Unreleased]` in `CHANGELOG.md` (Added, Changed, Fixed, Removed,
+   Security; user-facing changes only). Commit it to `main` and push.
 
 ## Release
 
-For the initial release (when there is no prior release tag), publish the current
-version:
-
 ```bash
-npm run release:first
+npm run release:dry       # preview; changes nothing and skips the hooks
+npm run release           # asks for the version; or: npm run release -- patch|minor|major
 ```
 
-For all later releases, preview the process first:
+In order, `npm run release`:
+
+1. refuses to start when not logged in to npm or when `HEAD` is already a release;
+2. checks that Unreleased has entries and runs `npm run verify`;
+3. bumps the version and the changelog, then runs `npm run test:package` (packs
+   the tarball, installs it, and checks `--help` and the `--version` line for
+   `strong`);
+4. commits `chore: release vX.Y.Z`, tags `vX.Y.Z`, pushes both;
+5. creates the GitHub Release;
+6. publishes to npm from the tagged commit (npm may ask for a one-time password).
+
+A prerelease is published under a dist-tag named after its identifier, so
+`latest` keeps pointing at the last full release:
 
 ```bash
-npm run release:dry
+npm run release -- --preRelease=beta    # 1.3.0-beta.0, published as @crcatala/strong-cli@beta
+npm run release -- --preRelease=beta --npm.tag=next    # same version, under "next"
 ```
 
-`release:dry` disables npm and GitHub integrations, so it cannot publish or create
-a GitHub Release. It still requires a clean `main` branch because that is an
-invariant of the real release.
+`npm run release -- <version> --npm.allowSameVersion` re-releases the version
+already in `package.json` (there is no `release:first`).
 
-Then release interactively:
+## When a step fails
 
-```bash
-export GITHUB_TOKEN=github_pat_... # if not already configured
-npm run release
-```
+- **Before the commit** (steps 1–3): nothing was changed on the remote. Fix the
+  cause and run `npm run release` again; `git checkout -- .` discards a
+  half-made bump.
+- **GitHub Release** (step 5): the tag is pushed. Create the release from the
+  tag with that version's CHANGELOG section as notes
+  (`gh release create vX.Y.Z --title vX.Y.Z --notes-file <section>`), then run
+  `npm run release:publish`.
+- **npm publish** (step 6): the tag is pushed; only the publish is left. Run
+  `npm run release:publish` from the tagged commit (it picks the prerelease
+  dist-tag again; `npm run release:publish -- --tag <tag>` chooses another).
 
-Release-it prompts for the version bump and then:
+Published npm versions are immutable: if a release has a defect, publish a
+corrective version rather than replacing the existing one.
 
-1. verifies the clean `main` checkout, an unreleased changelog section, and
-   `npm run verify`;
-2. updates `package.json` and moves Unreleased changelog entries into the new version;
-3. packs and smoke-tests the built npm artifact;
-4. commits and tags `vX.Y.Z`;
-5. publishes `@crcatala/strong-cli` publicly to npm;
-6. pushes the release commit and tag; and
-7. creates a GitHub Release using the changelog notes.
-
-Useful recovery options:
+## Verify
 
 ```bash
-# Skip npm publishing if it already succeeded in a partial release
-npm run release -- --no-npm
-
-# Skip GitHub Release creation
-npm run release -- --no-github
-
-# Release a specific version without the bump prompt
-npm run release -- 0.1.0
-
-# Publish a prerelease
-npm run release -- --preRelease=alpha
-```
-
-## Verify the release
-
-```bash
-npm view @crcatala/strong-cli
-npx -y @crcatala/strong-cli@latest --version
+npm view @crcatala/strong-cli version
+npx -y @crcatala/strong-cli@latest --version   # strong X.Y.Z (sha7 YYYY-MM-DD)
 npx -y @crcatala/strong-cli@latest --help
 ```
-
-Published npm versions are immutable. If a release has a defect, publish a
-corrective version rather than replacing the existing version.

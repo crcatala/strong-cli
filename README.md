@@ -16,20 +16,19 @@ community-reverse-engineered endpoints. Use at your own risk.
 > test account**), at low frequency, for your own data. See
 > [docs/auth-findings.md#risks](docs/auth-findings.md#risks).
 
-## Setup
-
-Install from npm (requires Node.js `^22.21.0 || >=24.0.0`):
+## Install
 
 ```bash
-npm install -g @crcatala/strong-cli
-# or run without installing:
-npx @crcatala/strong-cli <command>
+npm install -g @crcatala/strong-cli   # or: pnpm add -g @crcatala/strong-cli, bun add -g @crcatala/strong-cli
+npx @crcatala/strong-cli <command>    # run without installing
 ```
 
-### Developing from source
+Requires Node.js `^22.21.0 || >=24.0.0`.
+
+### From source
 
 ```bash
-git clone https://github.com/crcatala/strong-cli
+git clone https://github.com/crcatala/strong-cli.git
 cd strong-cli
 npm install
 
@@ -43,26 +42,40 @@ npm run build
 node dist/cli.js <command>
 ```
 
-To test the built checkout as a globally available, native-style `strong`
+To use the built checkout as a globally available, native-style `strong`
 command, link the package after each build:
 
 ```bash
 npm run build
 npm link
-strong <command>
+strong --version   # strong X.Y.Z (sha7 YYYY-MM-DD): the commit you built
 
 # remove the global link when finished
 npm unlink -g @crcatala/strong-cli
 ```
 
 `npm link` points the global `strong` executable at this checkout's `dist/`
-directory, so rerun `npm run build` after source changes before testing again.
+directory, so re-run `npm run build` after pulling or changing code. If `strong`
+is also installed globally, remove that copy first so the linked build is the one
+on `PATH` (`command -v strong` should point inside the clone).
 
 **Startup performance**: the *built* CLI and the bun dev path are roughly equivalent
 (~70–85 ms to first output). `npx tsx` adds ~400 ms of npm/npx/loader overhead on top,
 so use `bun src/cli.ts` (or the built `dist`) for interactive use. Data commands
 (`workouts`, `stats`, `export`) are dominated by network round-trips to the Strong
 backend regardless of runner.
+
+### Updating
+
+```bash
+strong update --check   # 0: up to date, 1: update available, 2: could not check
+strong update           # update the way strong was installed
+```
+
+`update` uses the installation `strong version` reports: a checkout is updated by
+pulling `main`, reinstalling and rebuilding (it refuses when the checkout is dirty
+or on another branch); a global npm install is updated with
+`npm install -g @crcatala/strong-cli@latest`.
 
 ## Authentication
 
@@ -193,6 +206,16 @@ strong exercises                     # first 200 global exercises
 strong exercises --search squat
 strong exercises --user              # + your custom exercises (needs auth)
 strong exercises --fresh             # refresh the public exercise cache
+```
+
+### Maintenance
+
+```bash
+strong --version                     # strong X.Y.Z (sha7 YYYY-MM-DD)
+strong version                       # version, commit, date, dirty state, install method, path
+strong version --json                # the same as one JSON object
+strong update --check                # 0: up to date, 1: update available, 2: could not check
+strong update                        # update the way strong was installed
 ```
 
 ## Writing (opt-in)

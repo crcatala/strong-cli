@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `strong update [--check] [--force]` updates the CLI the way it was installed:
+  a source checkout pulls `main`, reinstalls and rebuilds; a global npm install
+  reinstalls `@crcatala/strong-cli@latest`. `--check` only reports (exit 0 up to
+  date, 1 update available, 2 unknown).
+- `strong version` prints the version, commit, commit date, dirty state, install
+  method and install path; `--json` prints them as one object.
+
+### Changed
+
+- `strong --version` now prints `<name> <version> (<sha7>[-dirty] <date>)`, the
+  same line for a registry install and a local build, so the commit on `PATH` is
+  visible.
+
 ## [0.3.0] - 2026-09-10
 
 ### Added
